@@ -1,0 +1,10 @@
+{% extends "index.html" %}
+
+{% block extra_head %}
+{{ super() }}
+<!-- Game-specific enhancements -->
+<meta name="game-category" content="{{ meta.category | default('arcade') }}">
+{% if meta.rating %}
+<meta name="game-rating" content="{{ meta.rating }}">
+{% endif %}
+{% endblock %}

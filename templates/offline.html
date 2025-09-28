@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 text-center">
+            <!-- Offline Icon -->
+            <div class="offline-icon mb-4">
+                <i class="bi bi-wifi-off display-1 text-muted"></i>
+            </div>
+            
+            <!-- Offline Message -->
+            <h1 class="display-5 fw-bold mb-3">{{ page_title | default('You are Offline') }}</h1>
+            
+            <div class="offline-content mb-4">
+                {% if content %}
+                {{ content | safe }}
+                {% else %}
+                <p class="text-muted">{{ 'offline.message' | translate('Please check your internet connection and try again.') }}</p>
+                {% endif %}
+            </div>
+            
+            <!-- Connection Status -->
+            <div class="connection-status mb-4">
+                <div class="alert alert-warning" id="connectionAlert">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <span id="connectionStatus">{{ 'offline.checking' | translate('Checking connection...') }}</span>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="offline-actions d-flex gap-3 justify-content-center flex-wrap">
+                <button onclick="checkConnection()" class="btn btn-primary">
+                    <i class="bi bi-arrow-clockwise me-2"></i>
+                    {{ 'offline.retry' | translate('Try Again') }}
+                </button>
+                
+                <button onclick="goOfflineHome()" class="btn btn-outline-secondary">
+                    <i class="bi bi-house me-2"></i>
+                    {{ 'offline.cached_home' | translate('Cached Home') }}
+                </button>
+            </div>
+            
+            <!-- Offline Tips -->
+            <div class="offline-tips mt-5">
+                <h5>{{ 'offline.tips_title' | translate('While you wait...') }}</h5>
+                <div class="row g-3 mt-3">
+                    <div class="col-md-6">
+                        <div class="tip-card p-3 bg-light rounded">
+                            <i class="bi bi-wifi text-primary mb-2 fs-4"></i>
+                            <h6>{{ 'offline.tip1_title' | translate('Check Connection') }}</h6>
+                            <small class="text-muted">{{ 'offline.tip1_text' | translate('Make sure your WiFi or mobile data is turned on') }}</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="tip-card p-3 bg-light rounded">
+                            <i class="bi bi-arrow-clockwise text-primary mb-2 fs-4"></i>
+                            <h6>{{ 'offline.tip2_title' | translate('Refresh Page') }}</h6>
+                            <small class="text-muted">{{ 'offline.tip2_text' | translate('Try refreshing the page once connection is restored') }}</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Cached Content (if any) -->
+            <div class="cached-content mt-5" id="cachedContent" style="display: none;">
+                <h5>{{ 'offline.cached_title' | translate('Available Offline') }}</h5>
+                <div class="list-group" id="cachedList">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Connection checking functionality
+let connectionCheckInterval;
+
+document.addEventListener('DOMContentLoaded', function() {
+    checkConnection();
+    
+    // Check connection every 5 seconds
+    connectionCheckInterval = setInterval(checkConnection, 5000);
+    
+    // Listen for online/offline events
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    // Load cached content
+    loadCachedContent();
+});
+
+function checkConnection() {
+    const statusElement = document.getElementById('connectionStatus');
+    const alertElement = document.getElementById('connectionAlert');
+    
+    // Simple connection check using fetch with no-cache
+    fetch('/?_=' + Date.now(), { 
+        method: 'HEAD', 
+        cache: 'no-cache',
+        mode: 'no-cors'
+    })
+    .then(response => {
+        handleOnline();
+    })
+    .catch(error => {
+        handleOffline();
+    });
+    
+    // Navigator.onLine check (not always reliable)
+    if (navigator.onLine) {
+        statusElement.textContent = '{{ "offline.online_detected" | translate("Connection detected! Trying to reconnect...") }}';
+        alertElement.className = 'alert alert-info';
+    } else {
+        handleOffline();
+    }
+}
+
+function handleOnline() {
+    const statusElement = document.getElementById('connectionStatus');
+    const alertElement = document.getElementById('connectionAlert');
+    
+    statusElement.innerHTML = '<i class="bi bi-check-circle me-2"></i>{{ "offline.back_online" | translate("Back online! Redirecting...") }}';
+    alertElement.className = 'alert alert-success';
+    
+    // Clear the interval
+    if (connectionCheckInterval) {
+        clearInterval(connectionCheckInterval);
+    }
+    
+    // Redirect to the original page after a short delay
+    setTimeout(function() {
+        const originalUrl = localStorage.getItem('offlineOriginalUrl') || '/';
+        window.location.href = originalUrl;
+    }, 2000);
+}
+
+function handleOffline() {
+    const statusElement = document.getElementById('connectionStatus');
+    const alertElement = document.getElementById('connectionAlert');
+    
+    statusElement.textContent = '{{ "offline.no_connection" | translate("No internet connection detected") }}';
+    alertElement.className = 'alert alert-warning';
+}
+
+function goOfflineHome() {
+    // Try to go to cached home page
+    window.location.href = '/';
+}
+
+function loadCachedContent() {
+    // Check if there are any cached pages in service worker cache
+    if ('caches' in window) {
+        caches.keys().then(function(cacheNames) {
+            if (cacheNames.length > 0) {
+                // Show cached content section
+                document.getElementById('cachedContent').style.display = 'block';
+                
+                // List common cached pages
+                const cachedPages = [
+                    { url: '/', title: '{{ "navigation.home" | translate("Home") }}' },
+                    { url: '/games/', title: '{{ "navigation.games" | translate("Games") }}' },
+                    { url: '/about-us/', title: '{{ "navigation.about" | translate("About") }}' }
+                ];
+                
+                const cachedList = document.getElementById('cachedList');
+                cachedPages.forEach(function(page) {
+                    const listItem = document.createElement('a');
+                    listItem.href = page.url;
+                    listItem.className = 'list-group-item list-group-item-action';
+                    listItem.innerHTML = `
+                        <i class="bi bi-file-text me-2"></i>
+                        ${page.title}
+                        <small class="text-muted ms-2">({{ "offline.cached" | translate("Cached") }})</small>
+                    `;
+                    cachedList.appendChild(listItem);
+                });
+            }
+        });
+    }
+}
+
+// Store the original URL when going offline
+if (!localStorage.getItem('offlineOriginalUrl')) {
+    localStorage.setItem('offlineOriginalUrl', document.referrer || '/');
+}
+
+// Analytics tracking for offline page
+if (typeof gtag !== 'undefined') {
+    gtag('event', 'offline_page_view', {
+        'page_title': 'Offline Page',
+        'page_location': window.location.href,
+        'connection_type': navigator.connection ? navigator.connection.effectiveType : 'unknown'
+    });
+}
+
+// Cleanup when leaving page
+window.addEventListener('beforeunload', function() {
+    if (connectionCheckInterval) {
+        clearInterval(connectionCheckInterval);
+    }
+});
+</script>
+{% endblock %}

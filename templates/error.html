@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+{% if current_page == '404' %}
+<!-- Auto-redirect for 404 pages to preserve SEO -->
+<meta http-equiv="refresh" content="3; url=/">
+<link rel="canonical" href="{{ site_url }}">
+<script>
+// Immediate redirect after 2 seconds
+setTimeout(function() {
+    window.location.replace('/');
+}, 2000);
+</script>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 text-center">
+            <!-- Error Icon -->
+            <div class="error-icon mb-4">
+                {% if current_page == '404' %}
+                <i class="bi bi-exclamation-triangle display-1 text-warning"></i>
+                {% else %}
+                <i class="bi bi-x-circle display-1 text-danger"></i>
+                {% endif %}
+            </div>
+            
+            <!-- Error Message -->
+            <h1 class="display-4 fw-bold mb-3">
+                {% if current_page == '404' %}
+                404
+                {% else %}
+                {{ 'error.oops' | translate('Oops!') }}
+                {% endif %}
+            </h1>
+            
+            <h2 class="h4 mb-4">{{ page_title }}</h2>
+            
+            {% if current_page == '404' %}
+            <div class="error-content mb-4">
+                <p><strong>Redirecting to homepage in 3 seconds...</strong></p>
+                <p>The page you're looking for no longer exists. You'll be automatically redirected.</p>
+                <p>If not redirected, <a href="/">click here to go home</a>.</p>
+            </div>
+            {% elif content %}
+            <div class="error-content mb-4">
+                {{ content | safe }}
+            </div>
+            {% endif %}
+            
+            <!-- Action Buttons -->
+            <div class="error-actions d-flex gap-3 justify-content-center flex-wrap">
+                <a href="/" class="btn btn-primary">
+                    <i class="bi bi-house me-2"></i>
+                    {{ 'navigation.home' | translate('Go Home') }}
+                </a>
+                
+                <button onclick="history.back()" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>
+                    {{ 'navigation.back' | translate('Go Back') }}
+                </button>
+                
+                {% if current_page == '404' %}
+                <a href="/games/" class="btn btn-outline-primary">
+                    <i class="bi bi-controller me-2"></i>
+                    {{ 'navigation.games' | translate('Browse Games') }}
+                </a>
+                {% endif %}
+            </div>
+            
+            <!-- Search Box for 404 -->
+            {% if current_page == '404' %}
+            <div class="search-help mt-5">
+                <h5>{{ 'error.search_help' | translate('Looking for something specific?') }}</h5>
+                <form class="d-flex justify-content-center mt-3" onsubmit="return handleSearch(event)">
+                    <div class="input-group" style="max-width: 400px;">
+                        <input type="text" 
+                               class="form-control" 
+                               placeholder="{{ 'search.placeholder' | translate('Search...') }}" 
+                               id="errorSearchInput">
+                        <button class="btn btn-outline-primary" type="submit">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+            {% endif %}
+            
+            <!-- Help Links -->
+            <div class="help-links mt-5">
+                <h6 class="text-muted mb-3">{{ 'error.help_links' | translate('Helpful Links') }}</h6>
+                <div class="d-flex gap-4 justify-content-center flex-wrap">
+                    <a href="/about-us/" class="text-decoration-none">
+                        {{ 'navigation.about' | translate('About Us') }}
+                    </a>
+                    <a href="/contact/" class="text-decoration-none">
+                        {{ 'navigation.contact' | translate('Contact') }}
+                    </a>
+                    <a href="/sitemap.xml" class="text-decoration-none">
+                        {{ 'footer.sitemap' | translate('Sitemap') }}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Search functionality for 404 page
+function handleSearch(event) {
+    event.preventDefault();
+    const searchTerm = document.getElementById('errorSearchInput').value.trim();
+    
+    if (searchTerm) {
+        // Redirect to home page with search parameter
+        // In a real implementation, you'd have a proper search page
+        window.location.href = `/?search=${encodeURIComponent(searchTerm)}`;
+    }
+    
+    return false;
+}
+
+// Track 404 errors for analytics
+if (typeof gtag !== 'undefined' && '{{ current_page }}' === '404') {
+    gtag('event', 'page_not_found', {
+        'page_title': '404 - Page Not Found',
+        'page_location': window.location.href,
+        'referrer': document.referrer
+    });
+}
+
+// Auto-suggest similar pages (simplified example)
+document.addEventListener('DOMContentLoaded', function() {
+    if ('{{ current_page }}' === '404') {
+        const currentPath = window.location.pathname;
+        const suggestions = [];
+        
+        // Simple fuzzy matching with common pages
+        const commonPages = [
+            { path: '/', title: '{{ "navigation.home" | translate("Home") }}' },
+            { path: '/games/', title: '{{ "navigation.games" | translate("Games") }}' },
+            { path: '/about-us/', title: '{{ "navigation.about" | translate("About") }}' },
+            { path: '/contact/', title: '{{ "navigation.contact" | translate("Contact") }}' }
+        ];
+        
+        // Find similar paths
+        for (const page of commonPages) {
+            if (currentPath.toLowerCase().includes(page.path.split('/').pop().split('.')[0])) {
+                suggestions.push(page);
+            }
+        }
+        
+        // Display suggestions if found
+        if (suggestions.length > 0) {
+            const suggestionsHtml = suggestions.map(page => 
+                `<a href="${page.path}" class="btn btn-sm btn-outline-primary me-2 mb-2">${page.title}</a>`
+            ).join('');
+            
+            const suggestionsContainer = document.createElement('div');
+            suggestionsContainer.className = 'suggestions mt-4';
+            suggestionsContainer.innerHTML = `
+                <h6 class="text-muted mb-3">{{ 'error.did_you_mean' | translate('Did you mean?') }}</h6>
+                ${suggestionsHtml}
+            `;
+            
+            document.querySelector('.error-actions').after(suggestionsContainer);
+        }
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<!-- Breadcrumb Schema for SEO -->
+<script type="application/ld+json">
+{{ breadcrumb_schema | tojson | safe }}
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+{% if page_type == 'contact' %}
+form{display:grid;gap:.5rem}
+input,textarea{padding:.5rem;border:1px solid #333;border-radius:6px;background:#1a1a1a;color:#fff}
+button{cursor:pointer;padding:.5rem .75rem;border-radius:6px;border:1px solid #333;background:var(--brand);color:#fff}
+button:hover{background:var(--brand-2)}
+{% endif %}
+
+{% if page_type == 'dmca' %}
+form{display:grid;gap:.5rem}
+input,textarea{padding:.5rem;border:1px solid #333;border-radius:6px;background:#1a1a1a;color:#fff}
+button{cursor:pointer;padding:.5rem .75rem;border-radius:6px;border:1px solid #333;background:var(--brand);color:#fff}
+button:hover{background:var(--brand-2)}
+{% endif %}
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>{{ page_title }}</h1>
+
+{% if custom_html_content %}
+{{ custom_html_content | safe }}
+{% endif %}
+
+{% if contact_form and page_type == 'contact' %}
+<form aria-label="Contact form" onsubmit="event.preventDefault(); showMessage('{{ contact_form.success_message }}');">
+  {% for field in contact_form.fields %}
+  <label>{{ field.label }}
+    {% if field.type == 'textarea' %}
+    <textarea name="{{ field.name }}" {% if field.required %}required{% endif %} {% if field.rows %}rows="{{ field.rows }}"{% endif %} {% if field.autocomplete %}autocomplete="{{ field.autocomplete }}"{% endif %}></textarea>
+    {% else %}
+    <input {% if field.type %}type="{{ field.type }}"{% endif %} name="{{ field.name }}" {% if field.required %}required{% endif %} {% if field.autocomplete %}autocomplete="{{ field.autocomplete }}"{% endif %}>
+    {% endif %}
+  </label>
+  {% endfor %}
+  <button type="submit">{{ contact_form.submit_text }}</button>
+</form>
+<div id="form-message" style="display:none; margin-top:1rem; padding:0.75rem; background:#d1fae5; border:1px solid #10b981; border-radius:8px; color:#065f46;"></div>
+{% endif %}
+
+{% if dmca_form and page_type == 'dmca' %}
+<form aria-label="DMCA form" onsubmit="event.preventDefault(); showMessage('{{ dmca_form.success_message }}');">
+  {% for field in dmca_form.fields %}
+  <label>{{ field.label }}
+    {% if field.type == 'textarea' %}
+    <textarea {% if field.required %}required{% endif %} name="{{ field.name }}" {% if field.rows %}rows="{{ field.rows }}"{% endif %} {% if field.autocomplete %}autocomplete="{{ field.autocomplete }}"{% endif %}></textarea>
+    {% else %}
+    <input {% if field.required %}required{% endif %} {% if field.type %}type="{{ field.type }}"{% endif %} name="{{ field.name }}" {% if field.autocomplete %}autocomplete="{{ field.autocomplete }}"{% endif %}>
+    {% endif %}
+  </label>
+  {% endfor %}
+  <button type="submit">{{ dmca_form.submit_text }}</button>
+</form>
+<div id="form-message" style="display:none; margin-top:1rem; padding:0.75rem; background:#d1fae5; border:1px solid #10b981; border-radius:8px; color:#065f46;"></div>
+{% endif %}
+{% endblock %}
+

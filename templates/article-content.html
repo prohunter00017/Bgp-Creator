@@ -1,0 +1,21 @@
+{% if custom_html_content %}
+<section aria-label="Article Content" class="article-section">
+  <div class="container">
+    {% if breadcrumbs %}
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <ol style="list-style:none;display:flex;gap:.5rem;padding:0;margin:0">
+        {% for crumb in breadcrumbs %}
+        <li>
+          {% if crumb.url %}<a href="{{ crumb.url }}">{{ crumb.title }}</a>{% else %}{{ crumb.title }}{% endif %}
+        </li>
+        {% if not loop.last %}<li aria-hidden="true">›</li>{% endif %}
+        {% endfor %}
+      </ol>
+    </nav>
+    {% endif %}
+    <article class="main-content">
+      {{ custom_html_content | safe }}
+    </article>
+  </div>
+</section>
+{% endif %}

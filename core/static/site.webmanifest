@@ -1,0 +1,35 @@
+{
+  "id": "/?source=pwa",
+  "name": "{{ site_name }}",
+  "short_name": "{{ short_name }}",
+  "description": "{{ description }}",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "{{ background_color }}",
+  "theme_color": "{{ theme_color }}",
+  "orientation": "any",
+  "scope": "/",
+  "lang": "{{ language }}",
+  "dir": "ltr",
+  "categories": ["games", "entertainment"],
+  "prefer_related_applications": false,
+  "icons": [
+    {"src": "/assets/pwa/{{ seo_filename }}-icon-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "/assets/pwa/{{ seo_filename }}-icon-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "/assets/pwa/{{ seo_filename }}-icon-192x192-maskable.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable"},
+    {"src": "/assets/pwa/{{ seo_filename }}-icon-512x512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ],
+  "screenshots": [
+    {"src": "/assets/pwa/{{ seo_filename }}-screenshot-mobile.png", "sizes": "390x844", "type": "image/png", "form_factor": "narrow", "label": "{{ site_name }} mobile gameplay"},
+    {"src": "/assets/pwa/{{ seo_filename }}-screenshot-desktop.png", "sizes": "1280x720", "type": "image/png", "form_factor": "wide", "label": "{{ site_name }} desktop gameplay"}
+  ],
+  "shortcuts": [
+    {
+      "name": "{{ play_now_text }}",
+      "short_name": "{{ play_text }}",
+      "description": "{{ start_game_text }}",
+      "url": "/",
+      "icons": [{"src": "/assets/pwa/{{ seo_filename }}-icon-96x96.png", "sizes": "96x96", "type": "image/png"}]
+    }
+  ]
+}

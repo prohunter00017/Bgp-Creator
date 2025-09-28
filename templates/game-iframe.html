@@ -1,0 +1,119 @@
+{% if game_embed %}
+<section aria-label="Game" class="game-section">
+  <!-- Ad Before Game (All Devices) -->
+  {% if ads_enabled %}
+    {% set position = 'before_game' %}
+    {% include 'ads.html' %}
+  {% endif %}
+  
+  <!-- Game Player Container with Side Ads -->
+  <div class="game-player-container-with-ads{% if not ads_enabled %} no-ads{% endif %}">
+    <!-- Left Sidebar Ad (Desktop Only) -->
+    {% if ads_enabled %}
+      {% set position = 'left_sidebar' %}
+      {% include 'ads.html' %}
+    {% endif %}
+    
+    <div class="game-player">
+      <!-- Game Viewport -->
+      <div class="game-viewport">
+        <div class="frame-wrap">
+          <!-- Hero Image Background -->
+          <img src="{{ hero_image }}" 
+               alt="{{ hero_seo_attributes.alt }}"
+               title="{{ hero_seo_attributes.title }}"
+               loading="{{ hero_seo_attributes.loading }}"
+               decoding="{{ hero_seo_attributes.decoding }}"
+               class="game-background-image">
+          
+          <div class="overlay" id="overlay">
+            <div class="play-button-container">
+              <button id="play-btn" class="btn primary-play-btn" aria-controls="game-frame" aria-label="Load and play {{ game_name }} now" data-game-url="{{ game_url }}">
+                <span class="play-icon">▶</span>
+                <span class="play-text">Play Now</span>
+              </button>
+              <noscript>
+                <p style="color: white; text-align: center; margin-top: 1rem;">
+                  JavaScript is required to play games. Please enable JavaScript in your browser.
+                </p>
+              </noscript>
+            </div>
+          </div>
+          
+          <!-- Game Player Controls (top-right overlay) -->
+          <div class="game-player-controls" id="game-controls" style="display: none;">
+            <button id="fullscreen-btn" class="player-control-btn" aria-label="Enter fullscreen mode" title="Fullscreen">
+              <svg class="control-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+              </svg>
+            </button>
+          </div>
+          
+          <button id="exit-full" class="exit-btn" aria-label="Exit full view" title="Exit">✕</button>
+          <iframe id="game-frame" 
+            title="{{ game_name }} Game" 
+            loading="lazy" 
+            allow="autoplay; fullscreen; clipboard-read; clipboard-write; encrypted-media; gamepad; accelerometer; gyroscope; picture-in-picture"
+            allowfullscreen
+            scrolling="no"
+            frameborder="0"
+            src=""
+          ></iframe>
+        </div>
+      </div>
+      
+      <!-- Game Player Footer (like gaming websites) -->
+      <div class="game-player-footer">
+        <div class="game-actions">
+          <!-- Fullscreen Button -->
+          <button id="footer-fullscreen-btn" class="fullscreen-footer-btn" aria-label="Enter fullscreen mode" title="Fullscreen">
+            <svg class="fullscreen-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+            </svg>
+            <span>Fullscreen</span>
+          </button>
+          
+          <div class="share-section">
+            <span class="share-label">Share this game:</span>
+            <div class="share-buttons">
+              <button id="share-facebook" class="share-btn facebook" aria-label="Share on Facebook" title="Share on Facebook">
+                <svg class="share-icon" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                </svg>
+                <span>Facebook</span>
+              </button>
+              
+              <button id="share-twitter" class="share-btn twitter" aria-label="Share on Twitter" title="Share on Twitter">
+                <svg class="share-icon" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                </svg>
+                <span>Twitter</span>
+              </button>
+              
+              <button id="share-copy" class="share-btn copy" aria-label="Copy link" title="Copy link">
+                <svg class="share-icon" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                </svg>
+                <span>Copy Link</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Right Sidebar Ad (Desktop Only) -->
+    {% if ads_enabled %}
+      {% set position = 'right_sidebar' %}
+      {% include 'ads.html' %}
+    {% endif %}
+  </div>
+  
+  <!-- Ad After Game (All Devices) -->
+  {% if ads_enabled %}
+    {% set position = 'after_game' %}
+    {% include 'ads.html' %}
+  {% endif %}
+  
+</section>
+{% endif %}

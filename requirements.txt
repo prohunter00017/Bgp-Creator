@@ -1,0 +1,17 @@
+# BgpCreator - Static Game Site Generator
+# Python 3.8+ Required
+
+# Core Dependencies
+Jinja2==3.1.4              # Template engine for HTML generation
+MarkupSafe==2.1.5          # Secure HTML/XML markup for Jinja2
+
+# Image Processing
+Pillow==10.4.0             # Image manipulation for favicon and PWA icon generation
+
+# System Monitoring
+psutil==6.0.0              # System and process utilities for performance monitoring
+
+# Development Dependencies (Optional)
+# pytest==8.3.3            # Testing framework (uncomment for development)
+# black==24.8.0            # Code formatter (uncomment for development)
+# pylint==3.2.7            # Code linter (uncomment for development)

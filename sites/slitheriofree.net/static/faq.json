@@ -1,0 +1,69 @@
+{
+  "faqs": [
+    {
+      "question": "What is Slither.io and how do I play it?",
+      "answer": "Slither.io is a multiplayer browser game where you control a snake-like creature. The goal is to grow your snake by consuming glowing orbs and avoid colliding with other players. Use your mouse to control direction and hold left-click to boost speed."
+    },
+    {
+      "question": "Are these games free to play?",
+      "answer": "Yes, all games on our website are completely free to play. No downloads, registrations, or payments required. Simply click on any game and start playing instantly in your browser."
+    },
+    {
+      "question": "Do I need to download anything to play?",
+      "answer": "No downloads are required. All our games run directly in your web browser using HTML5 technology. Just make sure you have an updated browser like Chrome, Firefox, Safari, or Edge."
+    },
+    {
+      "question": "Can I play these games on mobile devices?",
+      "answer": "Yes, most of our games are mobile-friendly and work on smartphones and tablets. The games automatically adapt to touch controls for the best mobile gaming experience."
+    },
+    {
+      "question": "Why are some games not loading?",
+      "answer": "If a game isn't loading, try clearing your browser cache, disabling ad blockers temporarily, or trying a different browser. Also ensure you have a stable internet connection and JavaScript is enabled."
+    },
+    {
+      "question": "What are Geometry Dash games?",
+      "answer": "Geometry Dash games are rhythm-based platformers where you control a geometric shape through challenging obstacle courses. The gameplay syncs with background music, requiring precise timing and quick reflexes."
+    },
+    {
+      "question": "How do I save my game progress?",
+      "answer": "Game progress is typically saved automatically in your browser's local storage. To keep your progress, avoid clearing browser data and use the same browser and device when returning to play."
+    },
+    {
+      "question": "Are these games safe for children?",
+      "answer": "Yes, our games are family-friendly and suitable for all ages. We carefully select games that are appropriate, educational, and entertaining without violent or inappropriate content."
+    },
+    {
+      "question": "How often are new games added?",
+      "answer": "We regularly update our collection with new and exciting games. Check back frequently or bookmark our site to discover the latest additions to our gaming library."
+    },
+    {
+      "question": "Can I play multiplayer games with friends?",
+      "answer": "Many of our games support multiplayer functionality. Games like Slither.io automatically connect you to online servers where you can play with people worldwide. Some games also offer local multiplayer options."
+    },
+    {
+      "question": "What should I do if I encounter a bug or issue?",
+      "answer": "If you experience any technical issues, try refreshing the page first. For persistent problems, clear your browser cache or try a different browser. You can also check our site for updates and maintenance notifications."
+    },
+    {
+      "question": "Do you have keyboard shortcuts for games?",
+      "answer": "Yes, most games have keyboard controls. Common controls include Arrow keys or WASD for movement, Spacebar for jumping, and Enter to pause. Each game page displays its specific controls."
+    },
+    {
+      "question": "Why do some games have ads?",
+      "answer": "Ads help us keep the games free for everyone. They support the developers and help maintain our website. We try to keep ads minimal and non-intrusive to ensure the best gaming experience."
+    },
+    {
+      "question": "Can I submit my own game to the site?",
+      "answer": "We're always looking for quality games to add to our collection. Game developers can contact us through our contact page with details about their games for potential inclusion."
+    },
+    {
+      "question": "What internet speed do I need to play?",
+      "answer": "Most games work well with a basic broadband connection. For optimal performance, especially in multiplayer games, we recommend at least 5 Mbps download speed and a stable connection."
+    }
+  ],
+  "schema": {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": []
+  }
+}

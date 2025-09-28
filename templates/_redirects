@@ -1,0 +1,18 @@
+# Cloudflare Pages Redirects File
+# This file helps with SEO when old pages or domains are removed
+
+# Example redirects for common old pages
+# Uncomment and modify as needed for your expired domains:
+
+# /old-page-1 / 301
+# /old-page-2 / 301
+# /old-category/* /games/ 301
+# /blog/* / 301
+# /forum/* / 301
+
+# Redirect common misspellings or variations
+# /game/* /games/:splat 301
+# /play/* /games/:splat 301
+
+# Note: Cloudflare Pages will still serve 404.html for truly missing pages
+# The 404.html has automatic redirect built-in to preserve SEO

@@ -1,0 +1,13 @@
+<!-- Games Icon Widget -->
+{% if all_games and all_games|length > 0 %}
+<div class="all-games-widget">
+  <div class="games-icon-grid">
+    {% for game in all_games[:60] %}
+    <a href="{{ game.url }}" class="game-icon-card" title="{{ game.title }}">
+      <img src="{{ game.image }}" alt="{{ game.title }}" loading="lazy" 
+           onerror="this.src='/assets/images/gamelogo.webp'">
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}

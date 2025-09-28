@@ -1,0 +1,58 @@
+{# Ad Placement Template for Game Pages #}
+{% if ads_enabled %}
+  {# Helper macro to render ad based on network #}
+  {% macro render_ad(position) %}
+    {% if ad_networks.ezoic.enabled %}
+      {# Ezoic Ad Placement #}
+      <div id="{{ ad_networks.ezoic.placeholder_ids[position] }}"></div>
+    {% elif ad_networks.google_adsense.enabled %}
+      {# Google AdSense #}
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="{{ ad_networks.google_adsense.publisher_id }}"
+           data-ad-slot="{{ ad_networks.google_adsense.slots[position] }}"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    {% elif ad_networks.custom.enabled %}
+      {# Custom Ad Network HTML #}
+      {{ ad_networks.custom.html[position]|safe }}
+    {% endif %}
+  {% endmacro %}
+
+  {# Before Game Ad - Visible on all devices #}
+  {% if position == 'before_game' %}
+    <div class="ad-container ad-before-game">
+      <div class="ad-wrapper">
+        {{ render_ad('before_game') }}
+      </div>
+    </div>
+  {% endif %}
+
+  {# Left Sidebar Ad - Desktop only #}
+  {% if position == 'left_sidebar' %}
+    <div class="ad-container ad-sidebar ad-left-sidebar">
+      <div class="ad-wrapper">
+        {{ render_ad('left_sidebar') }}
+      </div>
+    </div>
+  {% endif %}
+
+  {# Right Sidebar Ad - Desktop only #}
+  {% if position == 'right_sidebar' %}
+    <div class="ad-container ad-sidebar ad-right-sidebar">
+      <div class="ad-wrapper">
+        {{ render_ad('right_sidebar') }}
+      </div>
+    </div>
+  {% endif %}
+
+  {# After Game Ad - Visible on all devices #}
+  {% if position == 'after_game' %}
+    <div class="ad-container ad-after-game">
+      <div class="ad-wrapper">
+        {{ render_ad('after_game') }}
+      </div>
+    </div>
+  {% endif %}
+{% endif %}
