@@ -5,6 +5,7 @@
     {% for game in all_games[:60] %}
     <a href="{{ game.url }}" class="game-icon-card" title="{{ game.title }}">
       <img src="{{ game.image }}" alt="{{ game.title }}" loading="lazy" 
+           decoding="async" width="240" height="135"
            onerror="this.src='/assets/images/gamelogo.webp'">
     </a>
     {% endfor %}

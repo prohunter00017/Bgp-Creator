@@ -9,7 +9,6 @@ import re
 import json
 from pathlib import Path
 from typing import Dict, List, Tuple
-from urllib.parse import urlparse
 import xml.etree.ElementTree as ET
 
 
@@ -80,7 +79,7 @@ class SEOScanner:
                 if 'viewport' not in content:
                     self.issues.append(f"Missing viewport meta tag: {html_file.relative_to(self.output_dir)}")
                     
-            except Exception as e:
+            except (OSError, IOError, UnicodeDecodeError) as e:
                 self.warnings.append(f"Failed to scan {html_file.name}: {str(e)}")
     
     def _scan_headings(self):
@@ -106,7 +105,7 @@ class SEOScanner:
                 if h3_count > 0 and h2_count == 0:
                     self.warnings.append(f"H3 without H2: {html_file.relative_to(self.output_dir)}")
                     
-            except Exception:
+            except (OSError, IOError, UnicodeDecodeError):
                 pass
     
     def _scan_images(self):
@@ -134,7 +133,7 @@ class SEOScanner:
                 if img_tags and 'loading="lazy"' not in content:
                     self.warnings.append(f"Images not using lazy loading: {html_file.relative_to(self.output_dir)}")
                     
-            except Exception:
+            except (OSError, IOError, UnicodeDecodeError):
                 pass
     
     def _scan_sitemap(self):
@@ -161,7 +160,7 @@ class SEOScanner:
             if len(lastmods) == 0:
                 self.warnings.append("Sitemap URLs missing lastmod dates")
                 
-        except Exception as e:
+        except (ET.ParseError, OSError, IOError) as e:
             self.issues.append(f"Invalid sitemap.xml: {str(e)}")
     
     def _scan_robots_txt(self):
@@ -173,7 +172,7 @@ class SEOScanner:
             return
         
         try:
-            with open(robots_path, 'r') as f:
+            with open(robots_path, 'r', encoding='utf-8') as f:
                 content = f.read()
             
             if "User-agent:" not in content:
@@ -184,7 +183,7 @@ class SEOScanner:
             else:
                 self.successes.append("robots.txt properly configured with sitemap")
                 
-        except Exception as e:
+        except (OSError, IOError, UnicodeDecodeError) as e:
             self.issues.append(f"Failed to read robots.txt: {str(e)}")
     
     def _scan_structured_data(self):
@@ -215,7 +214,7 @@ class SEOScanner:
                         except json.JSONDecodeError:
                             self.issues.append(f"Invalid JSON-LD: {html_file.relative_to(self.output_dir)}")
                             
-            except Exception:
+            except (OSError, IOError, UnicodeDecodeError):
                 pass
         
         if structured_data_found:
@@ -232,12 +231,12 @@ class SEOScanner:
         # Check CSS
         for css_file in css_files[:2]:
             try:
-                with open(css_file, 'r') as f:
+                with open(css_file, 'r', encoding='utf-8') as f:
                     content = f.read()
                     # Simple check for minification
                     if '\n\n' in content or '  ' in content:
                         self.warnings.append(f"CSS not minified: {css_file.name}")
-            except:
+            except (OSError, IOError, UnicodeDecodeError):
                 pass
         
         # Check service worker
@@ -254,7 +253,7 @@ class SEOScanner:
         if manifest_path.exists():
             self.successes.append("PWA manifest found")
             try:
-                with open(manifest_path, 'r') as f:
+                with open(manifest_path, 'r', encoding='utf-8') as f:
                     manifest = json.load(f)
                     
                 if 'name' not in manifest:
@@ -262,7 +261,7 @@ class SEOScanner:
                 if 'icons' not in manifest or len(manifest.get('icons', [])) == 0:
                     self.warnings.append("PWA manifest missing icons")
                     
-            except:
+            except (OSError, IOError, json.JSONDecodeError):
                 self.issues.append("Invalid PWA manifest")
         else:
             self.warnings.append("Missing PWA manifest (site.webmanifest)")
@@ -293,12 +292,12 @@ class SEOScanner:
         
         for html_file in html_files[:5]:
             try:
-                with open(html_file, 'r') as f:
+                with open(html_file, 'r', encoding='utf-8') as f:
                     content = f.read()
                     if '"FAQPage"' in content or 'itemtype="https://schema.org/FAQPage"' in content:
                         faq_implemented = True
                         break
-            except:
+            except (OSError, IOError, UnicodeDecodeError):
                 pass
         
         if not faq_implemented:
@@ -312,7 +311,7 @@ class SEOScanner:
         
         for html_file in html_files[:5]:
             try:
-                with open(html_file, 'r') as f:
+                with open(html_file, 'r', encoding='utf-8') as f:
                     content = f.read()
                     
                 # Check for broken internal links (only relative URLs starting with /)
@@ -336,7 +335,7 @@ class SEOScanner:
                         self.issues.append(f"Broken internal link {link} in {html_file.relative_to(self.output_dir)}")
                         break
                         
-            except:
+            except (OSError, IOError, UnicodeDecodeError):
                 pass
     
     def _scan_social_media_tags(self):
@@ -345,7 +344,7 @@ class SEOScanner:
         
         for html_file in html_files[:5]:
             try:
-                with open(html_file, 'r') as f:
+                with open(html_file, 'r', encoding='utf-8') as f:
                     content = f.read()
                 
                 # Check Open Graph tags
@@ -363,7 +362,7 @@ class SEOScanner:
                 if 'twitter:card' not in content:
                     self.warnings.append(f"Missing Twitter Card tags: {html_file.relative_to(self.output_dir)}")
                     
-            except:
+            except (OSError, IOError, UnicodeDecodeError):
                 pass
     
     def _generate_report(self) -> Dict:

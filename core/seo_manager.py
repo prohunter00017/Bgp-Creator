@@ -281,7 +281,7 @@ class SEOManager:
         if not game_rating:
             try:
                 h = int(hashlib.sha256(game_slug.encode('utf-8')).hexdigest()[:8], 16)
-            except Exception:
+            except (UnicodeEncodeError, AttributeError):
                 h = sum(ord(c) for c in game_slug)
             
             rating_value = round(3.5 + ((h % 150) / 100.0), 1)

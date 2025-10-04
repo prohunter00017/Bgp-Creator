@@ -2,17 +2,21 @@
 """
 Refactored Site Generator - Clean Architecture
 Main orchestrator that uses specialized modules for different responsibilities
+with comprehensive input validation and security measures
 """
 
 import os
 import shutil
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from threading import Lock
 try:
     from jinja2 import Environment, FileSystemLoader, select_autoescape, ChoiceLoader
 except ImportError as e:
     raise ImportError("Jinja2 is required. Install with: pip install Jinja2") from e
 
-from .site_loader import load_site_settings, get_site_paths, get_site_output_dir
+from .site_loader import load_site_settings, get_site_paths, get_site_output_dir, validate_site_name
+from .validators import validate_safe_path, validate_config, sanitize_filename
 from .config import SiteConfig
 from .game_manager import GameManager
 from .page_builder import PageBuilder
@@ -31,19 +35,62 @@ class SiteGenerator:
     """Main site generator orchestrating all components"""
     
     def __init__(self, template_dir="templates", output_dir=None, site_url=None, language=None, site=None, force=False):
-        """Initialize the site generator with all necessary components"""
+        """Initialize the site generator with all necessary components and input validation"""
+        
+        # Validate site parameter if provided
+        if site and not validate_site_name(site):
+            raise ValueError(f"Invalid site name: {site}. Only alphanumeric, dots, and hyphens allowed.")
         
         # Store site parameter for multi-site support
         self.site = site
         self.force = force
         
-        # Load site-specific settings and paths
+        # Load site-specific settings and paths (already includes validation)
         self.site_settings = load_site_settings(site)
         self.site_paths = get_site_paths(site)
         
-        # Set up directories
+        # Validate configuration
+        is_valid, errors, warnings = validate_config(self.site_settings)
+        if not is_valid:
+            error_msg = "\n".join(errors)
+            raise ValueError(f"Configuration validation failed:\n{error_msg}")
+        
+        # Log warnings if any
+        for warning in warnings:
+            log_warn("SiteGenerator", warning)
+        
+        # Set up directories with validation
         project_root = self.site_paths["project_root"]
+        
+        # Validate template directory
+        if template_dir:
+            template_dir_sanitized = sanitize_filename(template_dir, allow_subdirs=True)
+            if template_dir != template_dir_sanitized:
+                log_warn("SiteGenerator", f"Template directory name was sanitized: {template_dir} -> {template_dir_sanitized}")
+                template_dir = template_dir_sanitized
+        
         self.template_dir = template_dir if os.path.isabs(template_dir) else os.path.join(project_root, template_dir)
+        
+        # Validate template directory exists and is safe
+        if not os.path.exists(self.template_dir):
+            raise ValueError(f"Template directory does not exist: {self.template_dir}")
+        
+        # Only validate relative paths against project root
+        if not os.path.isabs(self.template_dir):
+            is_safe, error = validate_safe_path(self.template_dir, project_root)
+            if not is_safe:
+                raise ValueError(f"Template directory validation failed: {error}")
+        else:
+            # For absolute paths, just ensure they exist and are directories
+            if not os.path.isdir(self.template_dir):
+                raise ValueError(f"Template directory is not a directory: {self.template_dir}")
+        
+        # Validate output directory
+        if output_dir:
+            is_safe, error = validate_safe_path(output_dir)
+            if not is_safe:
+                raise ValueError(f"Output directory validation failed: {error}")
+        
         self.output_dir = get_site_output_dir(site, output_dir)
         self.content_dir = self.site_paths["content_dir"]
         self.static_dir = self.site_paths["static_dir"]
@@ -78,6 +125,13 @@ class SiteGenerator:
         # Initialize build cache for incremental builds first (needed by managers)
         cache_file = os.path.join(self.output_dir, ".build_cache.json")
         self.build_cache = BuildCache(cache_file)
+        
+        # Configure max workers for parallel processing (default: min(32, cpu_count() + 4))
+        cpu_count = os.cpu_count() or 4  # Fallback to 4 if cpu_count() returns None
+        self.max_workers = min(32, cpu_count + 4)
+        
+        # Thread lock for thread-safe operations
+        self._page_generation_lock = Lock()
         
         # Initialize managers (now they can use build_cache)
         self._initialize_managers()
@@ -270,18 +324,16 @@ class SiteGenerator:
                 
                 # Generate pages
                 pages = self._get_pages_from_config()
-                log_info("SiteGenerator", f"Generating {len(pages)} pages...", "📝")
+                log_info("SiteGenerator", f"Generating {len(pages)} pages using {self.max_workers} workers...", "📝")
                 
                 with time_operation("static_pages_generation", {"page_count": len(pages)}):
-                    for i, (page_key, template_name) in enumerate(pages, 1):
-                        log_info("SiteGenerator", f"Processing {page_key} ({i}/{len(pages)})", "📄")
-                        self._generate_page(page_key, template_name)
+                    self._generate_pages_parallel(pages)
                 
                 # Generate game pages and listing
                 if games:
                     with time_operation("game_pages_generation", {"game_count": len(games)}):
-                        log_info("SiteGenerator", f"Found {len(games)} game(s)", "🕹️")
-                        self._generate_game_pages(games)
+                        log_info("SiteGenerator", f"Found {len(games)} game(s), generating with {self.max_workers} workers", "🕹️")
+                        self._generate_game_pages_parallel(games)
                         self.page_builder.generate_games_listing(games, self.config.get_base_context())
                     
                     update_stats("page_generation", files_processed=len(games) + len(pages) + 1)  # +1 for games listing
@@ -355,10 +407,16 @@ class SiteGenerator:
             print_build_summary()
             
         except (OSError, IOError) as e:
+            # File system errors (permissions, disk space, etc.)
             log_error("SiteGenerator", f"File system error during website generation: {e}", "❌")
             raise
+        except MemoryError as e:
+            # Memory errors during site generation
+            log_error("SiteGenerator", f"Insufficient memory during website generation: {e}", "❌")
+            raise
         except Exception as e:
-            log_error("SiteGenerator", f"Fatal error during website generation: {e}", "❌")
+            # Log any other unexpected errors with their type for debugging
+            log_error("SiteGenerator", f"Fatal error during website generation ({type(e).__name__}): {e}", "❌")
             raise
     
     def _optimize_images(self):
@@ -368,9 +426,14 @@ class SiteGenerator:
                 self.image_optimizer.optimize_all_images(force=self.force)
                 self.image_optimizer.generate_image_manifest()
             except (OSError, IOError) as e:
+                # File system errors during image optimization
                 log_warn("SiteGenerator", f"File system error during image optimization: {e}", "⚠️")
-            except Exception as e:
-                log_warn("SiteGenerator", f"Warning: Image optimization failed: {e}", "⚠️")
+            except MemoryError as e:
+                # Memory errors during image processing
+                log_warn("SiteGenerator", f"Insufficient memory for image optimization: {e}", "⚠️")
+            except ImportError as e:
+                # Missing PIL/Pillow dependency
+                log_warn("SiteGenerator", f"Missing image processing library: {e}", "⚠️")
     
     def _get_pages_from_config(self):
         """Get pages configuration"""
@@ -413,14 +476,38 @@ class SiteGenerator:
             
             # Add missing hero SEO attributes and game embed for index page
             if page_key == "index":
+                # Get the hero image path
+                hero_image_path = self.config.get_dynamic_hero_image()
+                context['hero_image'] = hero_image_path
                 context['hero_seo_attributes'] = self.config.get_image_seo_attributes(
-                    self.config.get_dynamic_hero_image(),
+                    hero_image_path,
                     context_type='hero'
                 )
-                # Add game_embed for index page
-                context['game_embed'] = {"url": self.config.seo_config.get("game_embed", {}).get("url", self.config.game_embed_url)}
-                # Add game_url for template to use in data-game-url attribute
-                context['game_url'] = self.config.game_embed_url
+                
+                # Try to use the first game for hero and embed
+                games = getattr(self, '_games', [])
+                first_game = games[0] if games else None
+                
+                if first_game:
+                    # Use first game's data for hero
+                    context['game_embed'] = {"url": first_game.get('embed_url', self.config.game_embed_url)}
+                    context['game_url'] = first_game.get('embed_url', self.config.game_embed_url)
+                    context['game_name'] = first_game.get('title', self.config.site_name)
+                    # Override hero image with first game's hero image if available
+                    if first_game.get('hero_image'):
+                        # Convert hero image path to proper web path
+                        hero_img = first_game['hero_image']
+                        if hero_img.startswith('img/'):
+                            context['hero_image'] = f"/assets/images/{hero_img[4:]}"
+                        elif not hero_img.startswith('/'):
+                            context['hero_image'] = f"/assets/images/{hero_img}"
+                        else:
+                            context['hero_image'] = hero_img
+                else:
+                    # Fallback to default config
+                    context['game_embed'] = {"url": self.config.seo_config.get("game_embed", {}).get("url", self.config.game_embed_url)}
+                    context['game_url'] = self.config.game_embed_url
+                    context['game_name'] = self.config.site_name
             
             # Get full output path for clean URLs
             full_output_path, _ = self.page_builder.get_page_output_path(page_key)
@@ -435,11 +522,40 @@ class SiteGenerator:
             self._cleanup_legacy_files(page_key)
             
         except (OSError, IOError) as e:
+            # File system errors (permissions, disk issues)
             log_warn("SiteGenerator", f"File system error generating page {page_key}: {e}", "⚠️")
             update_stats("page_generation", files_error=1)
-        except Exception as e:
-            log_warn("SiteGenerator", f"Template error generating page {page_key}: {e}", "⚠️")
+        except UnicodeDecodeError as e:
+            # Encoding issues when reading content files
+            log_warn("SiteGenerator", f"Encoding error reading content for {page_key}: {e}", "⚠️")
             update_stats("page_generation", files_error=1)
+        except Exception as e:
+            # Template rendering errors or other issues - log with type
+            log_warn("SiteGenerator", f"Template error generating page {page_key} ({type(e).__name__}): {e}", "⚠️")
+            update_stats("page_generation", files_error=1)
+    
+    def _generate_pages_parallel(self, pages):
+        """Generate multiple pages in parallel using ThreadPoolExecutor"""
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            # Submit all page generation tasks
+            futures = []
+            for page_key, template_name in pages:
+                future = executor.submit(self._generate_page, page_key, template_name)
+                futures.append((future, page_key))
+            
+            # Wait for all tasks to complete and track progress
+            completed = 0
+            total = len(pages)
+            
+            for future, page_key in futures:
+                try:
+                    future.result()  # Wait for completion and handle any exceptions
+                    completed += 1
+                    if completed % 5 == 0 or completed == total:
+                        log_info("SiteGenerator", f"Pages generated: {completed}/{total}", "📄")
+                except Exception as e:
+                    log_error("SiteGenerator", f"Failed to generate page {page_key}: {e}", "⚠️")
+                    update_stats("page_generation", files_error=1)
     
     def _cleanup_legacy_files(self, page_key):
         """Clean up legacy .html files to prevent duplicate content"""
@@ -464,7 +580,8 @@ class SiteGenerator:
                     os.remove(full_legacy_path)
                     log_info("SiteGenerator", f"Cleaned up legacy file: {legacy_path}", "🧹")
                     
-        except Exception as e:
+        except (OSError, IOError) as e:
+            # File system errors when removing old files
             log_warn("SiteGenerator", f"Error cleaning up legacy files for {page_key}: {e}", "⚠️")
 
     def _cleanup_legacy_game_files(self):
@@ -478,7 +595,8 @@ class SiteGenerator:
                         legacy_file = os.path.join(games_dir, file)
                         os.remove(legacy_file)
                         log_info("SiteGenerator", f"Cleaned up legacy game file: games/{file}", "🧹")
-        except Exception as e:
+        except (OSError, IOError) as e:
+            # File system errors when removing old game files
             log_warn("SiteGenerator", f"Error cleaning up legacy game files: {e}", "⚠️")
 
     def _final_cleanup_legacy_files(self):
@@ -524,7 +642,8 @@ class SiteGenerator:
                 dirs_msg = f", dirs: {', '.join(cleanup_dirs)}" if cleanup_dirs else ""
                 log_info("SiteGenerator", f"Final cleanup completed{files_msg}{dirs_msg}", "🧹")
             
-        except Exception as e:
+        except (OSError, IOError) as e:
+            # File system errors during final cleanup
             log_warn("SiteGenerator", f"Error in final cleanup: {e}", "⚠️")
 
     def _get_content_file(self, page_key):
@@ -540,8 +659,13 @@ class SiteGenerator:
         """Generate individual game pages"""
         try:
             template = self.env.get_template("index.html")
+        except (OSError, IOError) as e:
+            # File system error loading template
+            log_warn("SiteGenerator", f"Could not read template index.html for game pages: {e}", "⚠️")
+            return
         except Exception as e:
-            log_warn("SiteGenerator", f"Missing template index.html for game pages: {e}", "⚠️")
+            # Jinja2 template errors - keep broad but log the specific type
+            log_warn("SiteGenerator", f"Template error loading index.html ({type(e).__name__}): {e}", "⚠️")
             return
         
         for game in games:
@@ -593,9 +717,128 @@ class SiteGenerator:
                     game, template, base_context, sidebar_games, breadcrumbs
                 )
                 
-            except Exception as e:
-                log_warn("SiteGenerator", f"Error generating game page {game.get('slug')}: {e}", "⚠️")
+            except (OSError, IOError) as e:
+                # File system errors during game page generation
+                log_warn("SiteGenerator", f"File system error generating game page {game.get('slug')}: {e}", "⚠️")
                 update_stats("page_generation", files_error=1)
+            except UnicodeDecodeError as e:
+                # Encoding issues with game content
+                log_warn("SiteGenerator", f"Encoding error in game content {game.get('slug')}: {e}", "⚠️")
+                update_stats("page_generation", files_error=1)
+            except KeyError as e:
+                # Missing required keys in game data
+                log_warn("SiteGenerator", f"Missing required data for game page {game.get('slug')}: {e}", "⚠️")
+                update_stats("page_generation", files_error=1)
+            except Exception as e:
+                # Template rendering errors or other issues - log with type
+                log_warn("SiteGenerator", f"Error generating game page {game.get('slug')} ({type(e).__name__}): {e}", "⚠️")
+                update_stats("page_generation", files_error=1)
+        
+        # Clean up legacy game .html files after all games are generated
+        self._cleanup_legacy_game_files()
+    
+    def _generate_single_game_page(self, game, games, template, base_context_template):
+        """Generate a single game page (thread-safe helper for parallel processing)"""
+        try:
+            # Create a copy of base context for thread safety
+            base_context = base_context_template.copy()
+            
+            # Create breadcrumbs
+            breadcrumbs = [
+                {"title": "Home", "url": "/"},
+                {"title": "Games", "url": "/games/"},
+                {"title": game["title"], "url": None}
+            ]
+            
+            # Get game rating (thread-safe)
+            rating = self.game_manager.generate_game_rating(
+                game["slug"],
+                game.get("meta", {}).get("rating")
+            )
+            
+            # Get software application schema (thread-safe)
+            software_schema = self.seo_manager.get_software_application_schema(
+                game["title"],
+                game["slug"],
+                game.get("description"),
+                rating
+            )
+            
+            # Build context (using copy)
+            base_context['software_application_schema'] = software_schema
+            base_context['breadcrumb_schema'] = self.seo_manager.get_breadcrumb_schema(breadcrumbs)
+            base_context['hero_seo_attributes'] = self.config.get_image_seo_attributes(
+                game["hero_image"],
+                context_type='hero',
+                game_title=game["title"]
+            )
+            
+            # Get games for sidebar (thread-safe operation)
+            sidebar_games = self.game_manager.get_random_games_for_widget(games, game["slug"])
+            all_games = self.game_manager.get_all_games_for_widget(games, game["slug"])
+            
+            # Fix image paths in game content HTML
+            if 'content_html' in game:
+                game['content_html'] = self.page_builder.resolve_asset_links(game['content_html'])
+            
+            # Add all_games for widget
+            base_context['all_games'] = all_games
+            
+            # Generate the page (thread-safe through PageBuilder)
+            self.page_builder.generate_game_page(
+                game, template, base_context, sidebar_games, breadcrumbs
+            )
+            
+        except (OSError, IOError) as e:
+            log_warn("SiteGenerator", f"File system error generating game page {game.get('slug')}: {e}", "⚠️")
+            update_stats("page_generation", files_error=1)
+        except UnicodeDecodeError as e:
+            log_warn("SiteGenerator", f"Encoding error in game content {game.get('slug')}: {e}", "⚠️")
+            update_stats("page_generation", files_error=1)
+        except KeyError as e:
+            log_warn("SiteGenerator", f"Missing required data for game page {game.get('slug')}: {e}", "⚠️")
+            update_stats("page_generation", files_error=1)
+        except Exception as e:
+            log_warn("SiteGenerator", f"Template error generating game page {game.get('slug')} ({type(e).__name__}): {e}", "⚠️")
+            update_stats("page_generation", files_error=1)
+    
+    def _generate_game_pages_parallel(self, games):
+        """Generate multiple game pages in parallel using ThreadPoolExecutor"""
+        try:
+            template = self.env.get_template("index.html")
+        except (OSError, IOError) as e:
+            log_warn("SiteGenerator", f"Could not read template index.html for game pages: {e}", "⚠️")
+            return
+        except Exception as e:
+            log_warn("SiteGenerator", f"Template error loading index.html ({type(e).__name__}): {e}", "⚠️")
+            return
+        
+        # Get base context once (will be copied per thread)
+        base_context_template = self.config.get_base_context()
+        
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            # Submit all game generation tasks
+            futures = []
+            for game in games:
+                future = executor.submit(
+                    self._generate_single_game_page, 
+                    game, games, template, base_context_template
+                )
+                futures.append((future, game.get('slug', 'unknown')))
+            
+            # Wait for all tasks to complete and track progress
+            completed = 0
+            total = len(games)
+            
+            for future, game_slug in futures:
+                try:
+                    future.result()  # Wait for completion and handle any exceptions
+                    completed += 1
+                    if completed % 10 == 0 or completed == total:
+                        log_info("SiteGenerator", f"Game pages generated: {completed}/{total}", "🎮")
+                except Exception as e:
+                    log_error("SiteGenerator", f"Failed to generate game page {game_slug}: {e}", "⚠️")
+                    update_stats("page_generation", files_error=1)
         
         # Clean up legacy game .html files after all games are generated
         self._cleanup_legacy_game_files()

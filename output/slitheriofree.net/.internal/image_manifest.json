@@ -1,0 +1,20 @@
+{
+  "images": {
+    "favicon.ico": {
+      "size_bytes": 4220,
+      "width": 32,
+      "height": 32,
+      "format": "ICO",
+      "path": "favicon.ico"
+    },
+    "gaming-site-logo.webp": {
+      "size_bytes": 1112,
+      "width": 64,
+      "height": 64,
+      "format": "WEBP",
+      "path": "gaming-site-logo.webp"
+    }
+  },
+  "generated_at": "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python",
+  "optimization_settings": {}
+}

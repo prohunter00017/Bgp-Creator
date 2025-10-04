@@ -9,7 +9,7 @@ import sys
 import os
 from pathlib import Path
 from core.generator_refactored import SiteGenerator
-from core.performance_logger import log_error, print_build_summary
+from core.performance_logger import log_error, log_warn, print_build_summary
 
 
 def get_available_sites():
@@ -111,8 +111,28 @@ def generate_site(site_name, force=False, output_dir=None, site_url=None):
         print(f"🌐 To view the site, run: python -m http.server 5000 --bind 0.0.0.0")
         print(f"   from the output/{site_name}/ directory")
         
+    except MemoryError as e:
+        log_error("Main", f"Out of memory during site generation: {str(e)}", "❌")
+        print("⚠️ Try reducing the number of parallel workers or processing fewer images at once")
+        sys.exit(1)
+    except PermissionError as e:
+        log_error("Main", f"Permission denied: {str(e)}", "❌")
+        print("⚠️ Check file permissions in the output directory")
+        sys.exit(1)
+    except FileNotFoundError as e:
+        log_error("Main", f"Required file not found: {str(e)}", "❌")
+        sys.exit(1)
+    except (OSError, IOError) as e:
+        log_error("Main", f"File system error: {str(e)}", "❌")
+        sys.exit(1)
+    except ValueError as e:
+        log_error("Main", f"Configuration error: {str(e)}", "❌")
+        sys.exit(1)
+    except KeyboardInterrupt:
+        log_warn("Main", "Site generation interrupted by user", "⚠️")
+        sys.exit(0)
     except Exception as e:
-        log_error("Main", f"Site generation failed: {str(e)}", "❌")
+        log_error("Main", f"Unexpected error during site generation: {type(e).__name__}: {str(e)}", "❌")
         sys.exit(1)
 
 

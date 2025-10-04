@@ -7,11 +7,12 @@ Handles HTML page generation and template rendering
 import os
 import re
 from typing import Dict, List, Any, Optional, Tuple
-from jinja2 import Environment, Template
+from threading import Lock
+from jinja2 import Environment, Template, TemplateNotFound
 from .url_utils import URLBuilder
 from .performance_logger import (
-    logger, time_operation, log_info, log_success, log_warn, log_error,
-    log_phase_start, log_phase_complete, update_stats
+    time_operation, log_info, log_success, log_warn, log_error,
+    update_stats
 )
 
 
@@ -22,6 +23,8 @@ class PageBuilder:
         self.env = env
         self.output_dir = output_dir
         self.url_builder = URLBuilder(site_url) if site_url else None
+        # Thread lock for safe file operations
+        self._file_write_lock = Lock()
     
     def generate_page(self, template_name: str, context: Dict[str, Any], 
                      output_path: str, subdir: Optional[str] = None) -> None:
@@ -49,6 +52,9 @@ class PageBuilder:
                 
                 # Resolve asset links in all pages
                 html_content = self.resolve_asset_links(html_content)
+                
+                # Optimize images for lazy loading and performance
+                html_content = self.optimize_images(html_content)
                 
                 # Write with atomic operation
                 temp_file = f"{full_path}.tmp"
@@ -113,18 +119,22 @@ class PageBuilder:
             # Resolve asset links in rendered content
             html_content = self.resolve_asset_links(html_content)
             
+            # Optimize images for lazy loading and performance
+            html_content = self.optimize_images(html_content)
+            
             # Get clean URL output path for game page
             full_output_path, _ = self.get_page_output_path(page_key, is_game_page=True)
             
-            # Ensure output directory exists for clean URLs
-            os.makedirs(os.path.dirname(full_output_path), exist_ok=True)
-            
-            # Write file to clean URL structure
-            temp_file = f"{full_output_path}.tmp"
-            
-            with open(temp_file, 'w', encoding='utf-8') as f:
-                f.write(html_content)
-            os.rename(temp_file, full_output_path)
+            # Ensure output directory exists for clean URLs (thread-safe)
+            with self._file_write_lock:
+                os.makedirs(os.path.dirname(full_output_path), exist_ok=True)
+                
+                # Write file to clean URL structure (atomic operation)
+                temp_file = f"{full_output_path}.tmp"
+                
+                with open(temp_file, 'w', encoding='utf-8') as f:
+                    f.write(html_content)
+                os.rename(temp_file, full_output_path)
             
             # Display relative path for logging
             rel_path = os.path.relpath(full_output_path, self.output_dir)
@@ -137,6 +147,31 @@ class PageBuilder:
         except Exception as e:
             log_error("PageBuilder", f"Template error generating game page {game.get('slug')}: {e}", "⚠️")
             update_stats("page_generation", files_error=1)
+    
+    def _generate_games_page_seo(self, games: List[Dict], site_name: str) -> Dict[str, str]:
+        """
+        Generate SEO-optimized title and description for the games listing page.
+        
+        Args:
+            games: List of all games
+            site_name: Name of the website
+            
+        Returns:
+            Dictionary with 'title' and 'description' keys
+        """
+        # Count the games
+        game_count = len(games)
+        
+        # Generate simple, universal title (without site name, as template adds it)
+        page_title = f"Play {game_count} Free Games Online"
+        
+        # Generate simple, universal description
+        page_description = f"Play {game_count} free online games. No downloads required - instant play!"
+        
+        return {
+            "title": page_title,
+            "description": page_description
+        }
     
     def generate_games_listing(self, games: List[Dict], context_base: Dict[str, Any]) -> None:
         """
@@ -153,7 +188,7 @@ class PageBuilder:
                 try:
                     template = self.env.get_template(template_name)
                     break
-                except Exception:
+                except TemplateNotFound:
                     continue
             
             if not template:
@@ -165,10 +200,14 @@ class PageBuilder:
                 {"title": "Games", "url": None}
             ]
             
+            # Generate SEO-optimized content dynamically
+            site_name = context_base.get("site_name", "Gaming Site")
+            seo_content = self._generate_games_page_seo(games, site_name)
+            
             context = {
                 **context_base,
-                "page_title": "Games",
-                "page_description": "Browse all games.",
+                "page_title": seo_content["title"],
+                "page_description": seo_content["description"],
                 "canonical_url": self.url_builder.get_canonical_url("games") if self.url_builder else f"{context_base['site_url']}games/",
                 "current_page": "games",
                 "breadcrumbs": breadcrumbs,
@@ -285,11 +324,15 @@ class PageBuilder:
                 # Resolve asset links in all pages
                 html_content = self.resolve_asset_links(html_content)
                 
-                # Write with atomic operation
-                temp_file = f"{full_output_path}.tmp"
-                with open(temp_file, 'w', encoding='utf-8') as f:
-                    f.write(html_content)
-                os.rename(temp_file, full_output_path)
+                # Optimize images for lazy loading and performance
+                html_content = self.optimize_images(html_content)
+                
+                # Write with atomic operation (thread-safe)
+                with self._file_write_lock:
+                    temp_file = f"{full_output_path}.tmp"
+                    with open(temp_file, 'w', encoding='utf-8') as f:
+                        f.write(html_content)
+                    os.rename(temp_file, full_output_path)
                 
                 # Display relative path for logging
                 rel_path = os.path.relpath(full_output_path, self.output_dir)
@@ -356,6 +399,49 @@ class PageBuilder:
         self.generate_page_direct('offline.html', offline_context, os.path.join(offline_dir, 'index.html'))
         
         log_success("PageBuilder", "Generated error pages: 404.html, offline.html", "✅")
+    
+    def optimize_images(self, html_content: str) -> str:
+        """
+        Optimize image tags by adding lazy loading and performance attributes.
+        
+        Args:
+            html_content: HTML content with image tags
+            
+        Returns:
+            HTML content with optimized image tags
+        """
+        # Pattern to match img tags
+        img_pattern = r'<img\s+([^>]*?)/?>'
+        
+        def process_img_tag(match):
+            img_attrs = match.group(1)
+            
+            # Check if loading attribute exists, if not add lazy loading
+            if 'loading=' not in img_attrs:
+                img_attrs += ' loading="lazy"'
+            
+            # Check if decoding attribute exists, if not add async decoding
+            if 'decoding=' not in img_attrs:
+                img_attrs += ' decoding="async"'
+            
+            # Check if alt attribute exists, if not add empty alt for accessibility
+            if 'alt=' not in img_attrs:
+                # Try to extract filename from src for a basic alt text
+                src_match = re.search(r'src="([^"]+)"', img_attrs)
+                if src_match:
+                    filename = src_match.group(1).split('/')[-1].split('.')[0]
+                    # Convert hyphens/underscores to spaces and capitalize
+                    alt_text = filename.replace('-', ' ').replace('_', ' ').title()
+                    img_attrs += f' alt="{alt_text}"'
+                else:
+                    img_attrs += ' alt=""'
+            
+            return f'<img {img_attrs}>'
+        
+        # Process all img tags
+        html_content = re.sub(img_pattern, process_img_tag, html_content, flags=re.IGNORECASE)
+        
+        return html_content
     
     def resolve_asset_links(self, html_content: str) -> str:
         """

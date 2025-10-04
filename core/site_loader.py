@@ -4,14 +4,15 @@ Site-specific settings loader for multi-site architecture.
 
 This module provides secure loading of site configurations with validation
 to prevent path traversal attacks and ensure safe site name handling.
+Enhanced security features include comprehensive path validation and
+protection against various injection attacks.
 """
 
 import os
-import sys
 import importlib.util
 import re
 from pathlib import Path
-from typing import Optional, Any, Dict
+from typing import Optional, Any, Dict, Tuple
 
 
 def get_project_root() -> Path:
@@ -37,11 +38,17 @@ def validate_site_name(site: str) -> bool:
         - Prevents path traversal attacks (e.g., '../', '..\\') 
         - Blocks invalid domain characters
         - Ensures cross-platform compatibility
+        - Validates against malicious patterns
+        - Enforces RFC domain name standards
     """
     if not site:
         return False
     
-    # Basic character validation: only alphanumeric, dots, and hyphens
+    # Length check to prevent overflow attacks
+    if len(site) > 253:  # Max domain length per RFC
+        return False
+    
+    # Basic character validation: only alphanumeric, dots, and hyphens (lowercase)
     pattern = r'^[a-z0-9.-]+$'
     if not re.match(pattern, site.lower()):
         return False
@@ -53,6 +60,25 @@ def validate_site_name(site: str) -> bool:
     # Prevent empty labels in domain (e.g., "domain..com")
     if '..' in site or '--' in site:
         return False
+    
+    # Check for null bytes and other dangerous characters
+    dangerous_chars = ['\0', '\n', '\r', '\t', '%00', '../', '..\\', '~', '$', '%', '&', '*', '|', ';', '<', '>', '(', ')', '[', ']', '{', '}', '`', '"', "'"]
+    for char in dangerous_chars:
+        if char in site:
+            return False
+    
+    # Validate each domain label
+    labels = site.split('.')
+    for label in labels:
+        # Each label must be 1-63 characters
+        if not label or len(label) > 63:
+            return False
+        # Label cannot start/end with hyphen
+        if label.startswith('-') or label.endswith('-'):
+            return False
+        # Check for only valid characters in each label
+        if not re.match(r'^[a-z0-9-]+$', label):
+            return False
     
     # Cross-platform path traversal protection: use Path and commonpath
     try:
@@ -72,7 +98,7 @@ def validate_site_name(site: str) -> bool:
             # Paths are on different drives (Windows) or invalid
             return False
             
-    except Exception:
+    except (ValueError, OSError, AttributeError):
         return False
     
     return True
@@ -127,9 +153,59 @@ def load_site_settings(site: Optional[str] = None):
         raise ImportError(f"Could not load settings: {e}")
 
 
+def validate_file_path_security(file_path: str, base_dir: str) -> Tuple[bool, Optional[str]]:
+    """Validate that a file path is safe and within expected directories.
+    
+    Args:
+        file_path: The file path to validate
+        base_dir: The base directory that the file must be within
+        
+    Returns:
+        Tuple of (is_safe, error_message)
+    """
+    try:
+        # Convert to Path objects and resolve
+        file_path_obj = Path(file_path).resolve()
+        base_dir_obj = Path(base_dir).resolve()
+        
+        # Check if file path is within base directory
+        try:
+            file_path_obj.relative_to(base_dir_obj)
+        except ValueError:
+            return False, f"Path escapes base directory: {file_path}"
+        
+        # Check for suspicious patterns
+        path_str = str(file_path)
+        if any(pattern in path_str for pattern in ['..', '\0', '%00', '~/', '$']):
+            return False, f"Suspicious pattern detected in path"
+        
+        return True, None
+        
+    except Exception as e:
+        return False, f"Invalid path: {str(e)}"
+
+
+def sanitize_path_component(component: str) -> str:
+    """Sanitize a single path component to remove dangerous characters.
+    
+    Args:
+        component: Path component to sanitize
+        
+    Returns:
+        Sanitized path component
+    """
+    # Remove null bytes and control characters
+    component = re.sub(r'[\0\n\r\t]', '', component)
+    # Remove path traversal sequences
+    component = component.replace('..', '')
+    # Remove leading/trailing whitespace and dots
+    component = component.strip('. \t')
+    return component
+
+
 def get_site_paths(site: Optional[str] = None) -> dict:
     """
-    Get site-specific directory paths
+    Get site-specific directory paths with security validation
     
     Args:
         site: Domain name or None for legacy mode
@@ -139,11 +215,21 @@ def get_site_paths(site: Optional[str] = None) -> dict:
     """
     project_root = get_project_root()
     
+    # Additional validation if site is provided
+    if site and not validate_site_name(site):
+        raise ValueError(f"Invalid site name: {site}")
+    
     if site:
         # Multi-site mode: use sites/<domain>/ structure (cross-platform)
         site_root = abs_path("sites", site)
         content_dir = site_root / "content_html"
         static_dir = site_root / "static"
+        
+        # Validate that paths are within project root
+        for path_name, path in [("site_root", site_root), ("content_dir", content_dir), ("static_dir", static_dir)]:
+            is_safe, error = validate_file_path_security(str(path), str(project_root))
+            if not is_safe:
+                raise ValueError(f"Security validation failed for {path_name}: {error}")
         
         # Fallback to legacy paths if site-specific don't exist
         if not content_dir.exists():
@@ -169,7 +255,7 @@ def get_site_paths(site: Optional[str] = None) -> dict:
 
 def get_site_output_dir(site: Optional[str] = None, custom_output: Optional[str] = None) -> str:
     """
-    Get output directory for site (cross-platform)
+    Get output directory for site with security validation (cross-platform)
     
     Args:
         site: Domain name or None for legacy mode
@@ -177,11 +263,33 @@ def get_site_output_dir(site: Optional[str] = None, custom_output: Optional[str]
         
     Returns:
         Output directory path
+        
+    Raises:
+        ValueError: If paths fail security validation
     """
+    # Validate site name if provided
+    if site and not validate_site_name(site):
+        raise ValueError(f"Invalid site name: {site}")
+    
     if custom_output:
-        return str(Path(custom_output).resolve())
+        # Sanitize and validate custom output path
+        custom_output = sanitize_path_component(custom_output)
+        output_path = Path(custom_output).resolve()
+        
+        # Ensure it's not trying to write to system directories
+        system_dirs = ['/etc', '/usr', '/bin', '/sbin', '/boot', '/proc', '/sys', 
+                      'C:\\Windows', 'C:\\Program Files', 'C:\\Program Files (x86)']
+        output_str = str(output_path)
+        for sys_dir in system_dirs:
+            if output_str.startswith(sys_dir):
+                raise ValueError(f"Cannot write to system directory: {output_str}")
+        
+        return str(output_path)
     
     if site:
+        # Validate site name before using it in path
+        if not validate_site_name(site):
+            raise ValueError(f"Invalid site name for output directory: {site}")
         return str(abs_path("output", site))
     else:
         return str(abs_path("output"))

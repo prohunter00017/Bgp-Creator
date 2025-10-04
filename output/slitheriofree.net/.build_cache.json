@@ -1,0 +1,519 @@
+{
+  "processed_images": [
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/gamelogo.webp",
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/hero-image.webp"
+  ],
+  "files": {
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/js/main.js": {
+      "mtime": 1759569991.0,
+      "size": 46195,
+      "hash": "8701fee2ca55c3b47a241f1f364e8cb273b707572d7760682a9a1852753a5196"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/logo.png": {
+      "mtime": 1759569991.0,
+      "size": 9304,
+      "hash": "f6b6ffe4a75f310fe7bd14c334756b7aebf7de2f4ea672be4557befbe441132a"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/gamelogo.webp": {
+      "mtime": 1759569991.0,
+      "size": 10020,
+      "hash": "e94f6d2d95c52b4073b1bf2ac7709fa0de199031e8af9cc0882a207426b3af6e"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/hero-image.webp": {
+      "mtime": 1759585196.9851613,
+      "size": 47670,
+      "hash": "a2fdc7ff15af67367e2eeee7ebf3b049b7e99132777b32ae57d49333f66f71d7"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-dash-back-on-track.webp": {
+      "mtime": 1759569991.0,
+      "size": 81550,
+      "hash": "669422881f4a540add79c8f6ecfcc03630f71ad1aeb49e81fdff956466405beb"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-dash-super-wave.webp": {
+      "mtime": 1759584762.0,
+      "size": 36422,
+      "hash": "d57f70e4ac7c532c99f1625a04bb99cf9ca0284b29f1c7d560f9313cd1cbb505"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-meltdown.webp": {
+      "mtime": 1759569991.0,
+      "size": 70684,
+      "hash": "d80ff90fe549898c7c33cc402dababe7f069751185f68ca22f2662aba0bf0f2d"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-subzero.webp": {
+      "mtime": 1759569991.0,
+      "size": 64354,
+      "hash": "7ec9926aa051a300dd3270b06ea60f84c08598c9ef5f831c6867c7371d7fc1fb"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-jump.webp": {
+      "mtime": 1759569991.0,
+      "size": 43592,
+      "hash": "9b821f1c0b2dd08dc620e690885b18feb67d8fd3e1b5275bf0ed0bd2dfbdb2c8"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-dash-deadlocked.webp": {
+      "mtime": 1759569991.0,
+      "size": 64050,
+      "hash": "3adbed464c5add81bfa03b5124597ab3e0dbe3779d86beb956abcd904293ebf3"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-dash-bloodbath.webp": {
+      "mtime": 1759569991.0,
+      "size": 80994,
+      "hash": "968fd1f940d1488a536d4c04b39e3acf26d219a4a101efa4361beefd722dbedb"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-dash-yatagarasu.webp": {
+      "mtime": 1759569991.0,
+      "size": 92002,
+      "hash": "d9d7d5746e320ce03bc8f7231c78c905d792307f6434ea700ddfb49d68094ebb"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-dash-theory-of-everything.webp": {
+      "mtime": 1759569991.0,
+      "size": 75678,
+      "hash": "b2ec6f34d214f0e4892d02564df1fcb400f297bba0e0abacbb7462f2e23119c2"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-dash-maze-maps.webp": {
+      "mtime": 1759569991.0,
+      "size": 67186,
+      "hash": "ea0902475271b94f80dd7a94d717aab0d924bc43845d0dbe6b3679c828e112fb"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-vibes-3d.webp": {
+      "mtime": 1759569991.0,
+      "size": 84154,
+      "hash": "df5edd0d95c3259025b950b7d33c57de1001eb84cb1264fce4a7f1625c6eb0c2"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-open-world.webp": {
+      "mtime": 1759584762.0,
+      "size": 34690,
+      "hash": "fe4fd6e5bbc3be47a91fe2e0f8f08a18077d237f6319fefbfddb7a864c75b174"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-world.webp": {
+      "mtime": 1759569991.0,
+      "size": 55898,
+      "hash": "a22b10b4e8591d438d4a44cab2d592b6a1f577cc1a7d5981401679cc8d90a6cb"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-dash-cataclysm.webp": {
+      "mtime": 1759569991.0,
+      "size": 83642,
+      "hash": "f290a010625f6f12f995101b234e4057e4ca964718da80c47d3745798ca459d2"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-dash-sonic-wave.webp": {
+      "mtime": 1759569991.0,
+      "size": 116552,
+      "hash": "b477966eeeb4be3225d0841eac9d468bebeadcb13b4b12ab5a296675265f8406"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-dash-silent-circles(1).webp": {
+      "mtime": 1759569991.0,
+      "size": 234226,
+      "hash": "d5327c279b3e86a9b01466f887bcdfe4afcab092c4a95742964e36d08a204a8f"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-stars.webp": {
+      "mtime": 1759569991.0,
+      "size": 63458,
+      "hash": "2b670c13b3a8e4415d9c00469985fe60dca318d269c8fd555625971dba22d824"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-dash-breeze.webp": {
+      "mtime": 1759569991.0,
+      "size": 69266,
+      "hash": "9a075727f478b46f2dc430a42cad12a95c856872fbb6b63fb27d7ecc2b5674b4"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-dash-bloodlust.webp": {
+      "mtime": 1759569991.0,
+      "size": 80730,
+      "hash": "d6a4a376802b4c46bcc9891763fa2f64b052da81f05fa0b39781ec95e65b97b1"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-freezenova.webp": {
+      "mtime": 1759569991.0,
+      "size": 73360,
+      "hash": "9f53c35774534436e99850166693af787b6f30b3e4d5c8832fd04ab54583098f"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-vibes-x-ball.webp": {
+      "mtime": 1759569991.0,
+      "size": 57548,
+      "hash": "cfc5359e8d1fcc718ef1683801a6416af4448f887e436cdf12506a39f88500cb"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-vibes-monster.webp": {
+      "mtime": 1759569991.0,
+      "size": 81262,
+      "hash": "9fc7b79776002282b43d2100f63250e97f9502112263f82d7598955cf961706c"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-dash-clubstep.webp": {
+      "mtime": 1759569991.0,
+      "size": 67552,
+      "hash": "5a87d3bea87a4ec0d18db55ba084615e7e9494b6f2d439830654532782cc5a60"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-dash-kenos.webp": {
+      "mtime": 1759569991.0,
+      "size": 47132,
+      "hash": "8590cbef1476a09cb4a57fd2b388db2a8f11be3a3f34cc414604ac5d976f6ba8"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-dash-blast-processing.webp": {
+      "mtime": 1759569991.0,
+      "size": 127816,
+      "hash": "de7a4b54668aac523206bd878fb533321af809b6a18f98152f196a5abd0e6df5"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-dash-zodiac.webp": {
+      "mtime": 1759569991.0,
+      "size": 66246,
+      "hash": "18a1163e93aa3d16992598231e69d5b55bc30da290b580c1f6737edb2f0db434"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-dash-sonic-wave-rebirth.webp": {
+      "mtime": 1759569991.0,
+      "size": 105006,
+      "hash": "52b74c510e9ec02c961bfad3b5c36c10c121ae7b0687b7cff1226b38c5f42260"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-dash-ultra-violence.webp": {
+      "mtime": 1759569991.0,
+      "size": 79746,
+      "hash": "48cbd981885615644871415a618252756094c3d7b86278342d13bf98996a6fc3"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-dash-3d.webp": {
+      "mtime": 1759569991.0,
+      "size": 69252,
+      "hash": "709a593363ae0bc8fe0d64ba0e4da33eef0f4141bd8accd752146fc567111058"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-game-3d.webp": {
+      "mtime": 1759569991.0,
+      "size": 43766,
+      "hash": "47001d56382cb786f16a9b108abc0e756f96fa81ca5b7b8ed0f47209ae344652"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-vibes.webp": {
+      "mtime": 1759569991.0,
+      "size": 62056,
+      "hash": "630f86696c1d98de8572b0132fe8d95d875569e927a4307cf715dece5cbd6708"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-dash-silent-circles.webp": {
+      "mtime": 1759569991.0,
+      "size": 140480,
+      "hash": "9c74bf467d182e2a63760dc286a419a0b689022ead14234c511979ddd9818078"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-dash-base-after-base.webp": {
+      "mtime": 1759569991.0,
+      "size": 61388,
+      "hash": "7dafbe4ace72cafa2b8a4719d6db2cf0993e9d3b832f34be017d3ca90b9601c0"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-dash-nine-circles.webp": {
+      "mtime": 1759569991.0,
+      "size": 67204,
+      "hash": "2692a6e68f33fcfc042b6c60ea882915d58bf2521667917b46c18489379fefdb"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-dash-clutterfunk.webp": {
+      "mtime": 1759569991.0,
+      "size": 82864,
+      "hash": "ff8f1bf33483c32d6fbf3df49d20218155e7cb981898580093fe5df3a6de4052"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-lite.webp": {
+      "mtime": 1759569991.0,
+      "size": 44548,
+      "hash": "fff497242a25ad8ba743e37ccb4f5c26ecedb6f2929c052bb86fed244809477c"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-arrow.webp": {
+      "mtime": 1759569991.0,
+      "size": 70628,
+      "hash": "9f9d42569a01ed2162bb33a4c0a47f670aebc3fcb50842b520911a59294b83c5"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/getaway-shootout.webp": {
+      "mtime": 1759569991.0,
+      "size": 40114,
+      "hash": "58cea0a1c18c24f3f9895dfa129c363c23d1d95ef4f76ebe4831f53fdd29ce6b"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/img/geometry-lite-classic.webp": {
+      "mtime": 1759569991.0,
+      "size": 92314,
+      "hash": "2b5e8081d35207303e11e05c49cdef441842a1d8c54934defd1272a8d8d30b35"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/static/favicon.ico": {
+      "mtime": 1759569991.0,
+      "size": 15406,
+      "hash": "c99a1f7bcf3d8df8ea86a139c29e3c8b2e055144caa93e19a2d55791432e0f65"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/index.html": {
+      "mtime": 1759569991.0,
+      "size": 626,
+      "hash": "cc15880d354f26974ac63f6478f7e7ef9525d4769869c273726d2cc8c989c555"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/privacy-policy.html": {
+      "mtime": 1759569991.0,
+      "size": 626,
+      "hash": "cc15880d354f26974ac63f6478f7e7ef9525d4769869c273726d2cc8c989c555"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/contact.html": {
+      "mtime": 1759569991.0,
+      "size": 626,
+      "hash": "cc15880d354f26974ac63f6478f7e7ef9525d4769869c273726d2cc8c989c555"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/parents-information.html": {
+      "mtime": 1759569991.0,
+      "size": 626,
+      "hash": "cc15880d354f26974ac63f6478f7e7ef9525d4769869c273726d2cc8c989c555"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/cookies.html": {
+      "mtime": 1759569991.0,
+      "size": 626,
+      "hash": "cc15880d354f26974ac63f6478f7e7ef9525d4769869c273726d2cc8c989c555"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/dmca.html": {
+      "mtime": 1759569991.0,
+      "size": 626,
+      "hash": "cc15880d354f26974ac63f6478f7e7ef9525d4769869c273726d2cc8c989c555"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/terms-of-service.html": {
+      "mtime": 1759569991.0,
+      "size": 626,
+      "hash": "cc15880d354f26974ac63f6478f7e7ef9525d4769869c273726d2cc8c989c555"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/about-us.html": {
+      "mtime": 1759569991.0,
+      "size": 626,
+      "hash": "cc15880d354f26974ac63f6478f7e7ef9525d4769869c273726d2cc8c989c555"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-meltdown.html": {
+      "mtime": 1759569991.0,
+      "size": 22373,
+      "hash": "8b9521cb7b1697d952b2a9a8d1c747b89e64868a7bbae34ff6e1005e2d26b7c1"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-dash-super-wave.html": {
+      "mtime": 1759569991.0,
+      "size": 22185,
+      "hash": "533976458d2f3e9418744c80bb498e0ad42c2a06bf1482bc60c1c48728c914a3"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-dash-back-on-track.html": {
+      "mtime": 1759569991.0,
+      "size": 22661,
+      "hash": "b965b882cf45441eeeca10532a34779f158b19aae3b02137891cca90838c5000"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-dash-bloodbath.html": {
+      "mtime": 1759569991.0,
+      "size": 35315,
+      "hash": "ee5c0d209c15c4e8ca4ec3a332e45dbee42baed2ee14c06af4ce532a9cf5efa8"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-dash-deadlocked.html": {
+      "mtime": 1759569991.0,
+      "size": 26658,
+      "hash": "cd6576bef9fdbb4b619ed3c30d79ef22a23454ed7c1b34d0338b6d70ae29a11f"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-jump.html": {
+      "mtime": 1759569991.0,
+      "size": 21748,
+      "hash": "282f31f2df6d6ca18b202fe1599bdd685aadeebc98be48ee949159c8c8d8c4fd"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-subzero.html": {
+      "mtime": 1759569991.0,
+      "size": 21177,
+      "hash": "b83aae1f7262513572631830af0b179801f46418ddab46d546d272f134650191"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-dash-sonic-wave.html": {
+      "mtime": 1759569991.0,
+      "size": 31857,
+      "hash": "e9ca9aa9877d7406068169c34fd0874f3ffbc20498eb838e2a9c12f4c3772811"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-dash-cataclysm.html": {
+      "mtime": 1759569991.0,
+      "size": 25789,
+      "hash": "2bf334ce4626288eacbebff90bf81101457df88b73b021bd478e1426dfa9748b"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-world.html": {
+      "mtime": 1759569991.0,
+      "size": 21947,
+      "hash": "471aad065b4b68701a01344a69012effcecbad1158c36118b938244d1bfd817a"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-vibes-3d.html": {
+      "mtime": 1759569991.0,
+      "size": 23212,
+      "hash": "fb1d4ddfab70d2dd19a7ddac6ef7a25a2e94f3f8303e6506322319f04fdd9568"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-open-world.html": {
+      "mtime": 1759569991.0,
+      "size": 21130,
+      "hash": "52e6174b1b0b5c57d5b0f7322d71b51219231cc3bebb9b254aaa12dafc460c95"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-dash-maze-maps.html": {
+      "mtime": 1759569991.0,
+      "size": 21241,
+      "hash": "2571c39dbcf956f49d92c5ba19bb41f90375aa78db7f39fc72c89fc9a2cab5d1"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-dash-theory-of-everything.html": {
+      "mtime": 1759569991.0,
+      "size": 25711,
+      "hash": "9935750cc59811aa718a1d68ed234bf853ed4c31c8066fb265e3679671623fe7"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-dash-yatagarasu.html": {
+      "mtime": 1759569991.0,
+      "size": 27436,
+      "hash": "3277eec4755c732a979c168c2dbe0a8a54eaec64a041866589b0863de2788d2e"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-vibes-monster.html": {
+      "mtime": 1759569991.0,
+      "size": 24634,
+      "hash": "9cea6ee886e2fab05916e133c0adb02283df8435d733967cec1e23eb85bf9de3"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-dash-clubstep.html": {
+      "mtime": 1759569991.0,
+      "size": 22824,
+      "hash": "ebb76a1f6c136dc13d43c06aa1c3b199feda2df6f46dc36e7a0dac9346c22eb1"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-vibes-x-ball.html": {
+      "mtime": 1759569991.0,
+      "size": 23445,
+      "hash": "06559bc1177d06406089cb2e7026ab8ac75b0310130f66d83a0129c76e828910"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-dash-bloodlust.html": {
+      "mtime": 1759569991.0,
+      "size": 34815,
+      "hash": "6a84b9916c3ebb8ae72dde3cacd2abd1a988a1b9383126efc6577164c568db6f"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-freezenova.html": {
+      "mtime": 1759569991.0,
+      "size": 21391,
+      "hash": "8c82518ca7064d49a2ec16683ad2913fb9d8cb4f986fb7cefd5b7ddccb801aab"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-stars.html": {
+      "mtime": 1759569991.0,
+      "size": 22810,
+      "hash": "23092391939b381dc43eda96d579cb712e94a916a57b9cd9524e166d89c68228"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-dash-breeze.html": {
+      "mtime": 1759569991.0,
+      "size": 22450,
+      "hash": "ab2e56aa31236ed080f3af6b31e22646f17a9e4ab46e942137033383426fb997"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-dash-zodiac.html": {
+      "mtime": 1759569991.0,
+      "size": 23998,
+      "hash": "95ddc0b29db6e9bd2f9c14893628ff77d5637eec887aa4cfe8aeb8bb0531c5f8"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-dash-kenos.html": {
+      "mtime": 1759569991.0,
+      "size": 30357,
+      "hash": "95220de49db420f4d547a86a19dcde276e8d172b9a3635eab0c39ec77261f38c"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-dash-blast-processing.html": {
+      "mtime": 1759569991.0,
+      "size": 24935,
+      "hash": "4cf9579903fbe02c4a1e2849861a9d0ddf9aee66d470fad6a65087b1b7e48e8e"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-game-3d.html": {
+      "mtime": 1759569991.0,
+      "size": 22466,
+      "hash": "995018f2b14dcbd4090dc6888bb33010db03eabaf9aa934875bb5f605faf124a"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-dash-ultra-violence.html": {
+      "mtime": 1759569991.0,
+      "size": 24947,
+      "hash": "ef1601e6d97ac07faa1d65c3ffd37af5487212ac65bd010d1dd622e2be92f52c"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-dash-3d.html": {
+      "mtime": 1759569991.0,
+      "size": 20677,
+      "hash": "7cce5427c91f0882e573b03e48eed4d967026a3f6469dea9e03b68f8765f3e94"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-dash-sonic-wave-rebirth.html": {
+      "mtime": 1759569991.0,
+      "size": 24601,
+      "hash": "d76bcbe36c6d83d22eb8c329b649b2f1b0c62ba04f5aaa47d67ce3db734e6c2d"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-dash-base-after-base.html": {
+      "mtime": 1759569991.0,
+      "size": 20135,
+      "hash": "d51e00021be6bc360f3caa3cad8017f240fc318044cb7710869721ccbd590841"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-dash-nine-circles.html": {
+      "mtime": 1759569991.0,
+      "size": 28671,
+      "hash": "7cc01443cec0609f14a173fea9520ea8f9329cd0c2dc41bd60ca5a7d07f568c3"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-dash-silent-circles.html": {
+      "mtime": 1759569991.0,
+      "size": 25591,
+      "hash": "2542c5383143af573898a90c46adcb331a9468472fea2e34050cfe6894f4985b"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-vibes.html": {
+      "mtime": 1759569991.0,
+      "size": 22686,
+      "hash": "6558317629d9f9752d2bcbbe847ec70b073c609ed29a2028be13fbbf09033c0d"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-lite-classic.html": {
+      "mtime": 1759569991.0,
+      "size": 21218,
+      "hash": "65793b38238ba5efaa45e7746b9dd9885d51957c2da7ed281efcc899425d5f80"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-lite.html": {
+      "mtime": 1759569991.0,
+      "size": 24163,
+      "hash": "bf753f8e523e5d9f558407280a4af0b71a37bbb9333081fa16e288982ab01297"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-arrow.html": {
+      "mtime": 1759569991.0,
+      "size": 22058,
+      "hash": "151238e2623105b4f402228dbb362bab278430658c86601205c3c6d8ff9146a7"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/getaway-shootout.html": {
+      "mtime": 1759569991.0,
+      "size": 24995,
+      "hash": "9c768c33661dae7ffcef6228f121e9e83f2d534c6c8b4c47af46ea91902546e3"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/content_html/games/geometry-dash-clutterfunk.html": {
+      "mtime": 1759569991.0,
+      "size": 23518,
+      "hash": "806d7d1b2555beb34b53e1e5877398d9a105b5292b4939b2c9827d71be759306"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/templates/offline.html": {
+      "mtime": 1759569991.0,
+      "size": 8141,
+      "hash": "a13f7b1cb15f2566dad545e8663d50908bec2179240a59fb047b8153a64c3f53"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/templates/page.html": {
+      "mtime": 1759569991.0,
+      "size": 3059,
+      "hash": "5fdaf1ec7d9f26ea2ffeb5480e3c8ab42c42d8f817f8e6b359a415bf24f1343d"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/templates/index.html": {
+      "mtime": 1759569991.0,
+      "size": 13016,
+      "hash": "8044cba77d60fe2d7a82ff9a7e8ea2a910efae82d3e51defca34d74589a06667"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/templates/games-widget.html": {
+      "mtime": 1759572176.0,
+      "size": 490,
+      "hash": "a9367c8c01ef20c2c3ae6933360ba04ae1452bf831e8366707ad755026048361"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/templates/base.html": {
+      "mtime": 1759572192.0,
+      "size": 11250,
+      "hash": "4a577cfa33e843eaa2107c9b382cca9fc826939d4e598805f1a3a8498186b708"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/templates/ads.html": {
+      "mtime": 1759569991.0,
+      "size": 1883,
+      "hash": "da30dfd14e7a62316cc9342aa523eafd8a5372db2969cd9df80403a8f7448244"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/templates/game.html": {
+      "mtime": 1759569991.0,
+      "size": 281,
+      "hash": "db421362d161a705301399ee213257482afb09e36066717563a9f56b668f8675"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/templates/game-iframe.html": {
+      "mtime": 1759572198.0,
+      "size": 5730,
+      "hash": "a0ea6cf4033a0eb6978f9b1ba9317ee8c7fcbc8cc89b44f0a936f6a78690c415"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/templates/error.html": {
+      "mtime": 1759569991.0,
+      "size": 6926,
+      "hash": "231da0292a149a0bc17846977f75e29343de91ac3a240e3ba5b2cb090b8de9a7"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/templates/article-content.html": {
+      "mtime": 1759581708.0,
+      "size": 699,
+      "hash": "f298110429b4eeb8fb495f75dff2d3a94c6a82ecf1d634d3967d5cf901d4725d"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/templates/games_list.html": {
+      "mtime": 1759581556.0,
+      "size": 1650,
+      "hash": "7d1d57d690c37c44081fbbddf2a605d8577678c2edc1004e5edbdc6c456462aa"
+    },
+    "/Users/admin/Documents/Projects/Python/PlaystoreScraper/Python/sites/slitheriofree.net/settings.py": {
+      "mtime": 1759580779.0,
+      "size": 8961,
+      "hash": "5c0faf50082e7a572ed34f6af886f95abcf645c8ed5a23f924cca14f8a92d96e"
+    }
+  },
+  "last_build": 1759585196.7348669
+}

@@ -4,7 +4,6 @@ URL utility module for consistent URL generation across the site.
 Ensures proper canonical URLs, clean URLs, and SEO-friendly paths.
 """
 
-from typing import Optional
 from urllib.parse import urljoin
 
 

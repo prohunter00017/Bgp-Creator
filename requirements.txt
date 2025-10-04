@@ -15,3 +15,6 @@ psutil==6.0.0              # System and process utilities for performance monito
 # pytest==8.3.3            # Testing framework (uncomment for development)
 # black==24.8.0            # Code formatter (uncomment for development)
 # pylint==3.2.7            # Code linter (uncomment for development)
+Jinja2==3.1.4
+Pillow==10.4.0
+psutil==6.0.0

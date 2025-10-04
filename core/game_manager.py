@@ -2,15 +2,19 @@
 """
 Game content management module
 Handles scanning, processing, and generating game-related content
+with comprehensive security validation and sanitization
 """
 
 import os
 import re
 import json
+import html
 import hashlib
 import random
 from typing import List, Dict, Optional, Any, Tuple
 from pathlib import Path
+from urllib.parse import urlparse
+from .performance_logger import log_info, log_warn, log_error, log_success
 
 
 class GameManager:
@@ -20,11 +24,12 @@ class GameManager:
         self.content_dir = content_dir
         self.site_url = site_url
         self.missing_images = []  # Track missing images that cause games to be skipped
+        self.image_fallbacks = {}  # Track fallback images used
         # Get the static directory path
         self.static_dir = Path(content_dir).parent / "static"
     
     def scan_games_content(self, default_embed_url: str = "about:blank", 
-                          default_hero_image: str = None) -> List[Dict[str, Any]]:
+                          default_hero_image: Optional[str] = None) -> List[Dict[str, Any]]:
         """
         Scan content_html/games/*.html and extract metadata.
         
@@ -70,14 +75,14 @@ class GameManager:
                 if hero_image_raw:
                     hero_valid = self._check_image_exists(hero_image_raw)
                     if not hero_valid:
-                        print(f"  ⚠️  Skipping game '{slug}' - missing hero image: {hero_image_raw}")
+                        log_warn("GameManager", f"Skipping game '{slug}' - missing hero image: {hero_image_raw}")
                         continue
                 
                 # Validate logo image if specified
                 if logo_image_raw:
                     logo_valid = self._check_image_exists(logo_image_raw)
                     if not logo_valid:
-                        print(f"  ⚠️  Skipping game '{slug}' - missing logo image: {logo_image_raw}")
+                        log_warn("GameManager", f"Skipping game '{slug}' - missing logo image: {logo_image_raw}")
                         continue
                 
                 # Update meta with validated images
@@ -96,43 +101,179 @@ class GameManager:
                     "meta": meta
                 })
                 
+            except (OSError, IOError) as e:
+                # File access errors (permissions, disk issues)
+                log_warn("GameManager", f"Could not read game file {fname}: {e}")
+            except UnicodeDecodeError as e:
+                # File encoding issues
+                log_warn("GameManager", f"Invalid encoding in game file {fname}: {e}")
             except Exception as e:
-                print(f"⚠️  Failed parsing game file {fname}: {e}")
+                # Catch any other parsing errors but log them specifically
+                log_warn("GameManager", f"Failed parsing game file {fname}: {type(e).__name__}: {e}")
         
-        print(f"\n📊 Game Scan Summary:")
-        print(f"  • Total games found: {len(os.listdir(games_dir)) if os.path.isdir(games_dir) else 0}")
-        print(f"  • Games with valid images: {len(games)}")
-        print(f"  • Games skipped (missing images): {len(self.missing_images)}")
+        log_info("GameManager", "Game Scan Summary:", "📊")
+        log_info("GameManager", f"Total games found: {len(os.listdir(games_dir)) if os.path.isdir(games_dir) else 0}", "•")
+        log_info("GameManager", f"Games with valid images: {len(games)}", "•")
+        log_info("GameManager", f"Games skipped (missing images): {len(self.missing_images)}", "•")
                 
         return games
     
+    def _sanitize_game_metadata(self, meta: Dict[str, Any]) -> Dict[str, Any]:
+        """Sanitize game metadata to prevent XSS and injection attacks.
+        
+        Args:
+            meta: Raw metadata dictionary
+            
+        Returns:
+            Sanitized metadata dictionary
+        """
+        sanitized = {}
+        
+        for key, value in meta.items():
+            if isinstance(value, str):
+                # Escape HTML for text fields to prevent XSS
+                if key in ['title', 'description', 'developer', 'publisher']:
+                    sanitized[key] = html.escape(value, quote=True)
+                # Validate URLs
+                elif key in ['embed', 'link', 'website']:
+                    if self._validate_game_url(value):
+                        sanitized[key] = value
+                    else:
+                        log_warn("GameManager", f"Invalid URL in metadata: {key}={value}")
+                # Validate image paths
+                elif key in ['hero', 'logo', 'thumbnail', 'icon']:
+                    if self._validate_image_path(value):
+                        sanitized[key] = value
+                    else:
+                        log_warn("GameManager", f"Invalid image path in metadata: {key}={value}")
+                else:
+                    # For other string fields, basic sanitization
+                    sanitized[key] = html.escape(value, quote=True)
+            else:
+                # Keep non-string values as is (numbers, booleans, etc.)
+                sanitized[key] = value
+        
+        return sanitized
+    
+    def _validate_game_url(self, url: str) -> bool:
+        """Validate a game URL to prevent XSS and ensure it's safe.
+        
+        Args:
+            url: URL to validate
+            
+        Returns:
+            True if URL is safe, False otherwise
+        """
+        if not url:
+            return False
+        
+        try:
+            parsed = urlparse(url)
+            
+            # Check for dangerous schemes
+            dangerous_schemes = ['javascript', 'data', 'vbscript', 'file']
+            if parsed.scheme and parsed.scheme.lower() in dangerous_schemes:
+                return False
+            
+            # Allow about:blank for iframe placeholder
+            if url == "about:blank":
+                return True
+            
+            # For other URLs, require http or https
+            if parsed.scheme and parsed.scheme.lower() not in ['http', 'https', '']:
+                return False
+            
+            # Check for XSS patterns in the URL
+            xss_patterns = ['<script', 'javascript:', 'on\\w+\\s*=', '\\x00']
+            for pattern in xss_patterns:
+                if re.search(pattern, url, re.IGNORECASE):
+                    return False
+            
+            return True
+            
+        except (ValueError, AttributeError):
+            return False
+    
+    def _validate_image_path(self, path: str) -> bool:
+        """Validate an image path to ensure it's safe.
+        
+        Args:
+            path: Image path to validate
+            
+        Returns:
+            True if path is safe, False otherwise
+        """
+        if not path:
+            return False
+        
+        # Check for path traversal attempts
+        if '..' in path or path.startswith('/') or path.startswith('~'):
+            return False
+        
+        # Check for null bytes
+        if '\\x00' in path or '\0' in path:
+            return False
+        
+        # Validate file extension
+        allowed_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.ico']
+        path_lower = path.lower()
+        if not any(path_lower.endswith(ext) for ext in allowed_extensions):
+            return False
+        
+        return True
+    
     def _extract_title(self, html_content: str, fallback_slug: str) -> str:
-        """Extract title from HTML content or generate from slug"""
+        """Extract title from HTML content or generate from slug (with sanitization)"""
         m = re.search(r"<h1[^>]*>(.*?)</h1>", html_content, flags=re.IGNORECASE|re.DOTALL)
         if m:
+            # Remove HTML tags and sanitize
             title = re.sub(r"<[^>]+>", "", m.group(1)).strip()
             if title:
-                return title
-        return fallback_slug.replace('-', ' ').replace('_', ' ').title()
+                # Escape HTML to prevent XSS
+                return html.escape(title, quote=True)
+        
+        # Sanitize the fallback slug-based title
+        title = fallback_slug.replace('-', ' ').replace('_', ' ').title()
+        return html.escape(title, quote=True)
     
     def _extract_embed_url(self, html_content: str) -> Optional[str]:
-        """Extract embed URL from HTML comment"""
+        """Extract and validate embed URL from HTML comment"""
         m = re.search(r"<!--\s*embed:\s*(.*?)\s*-->", html_content, flags=re.IGNORECASE)
-        return m.group(1).strip() if m else None
+        if m:
+            url = m.group(1).strip()
+            # Validate the URL before returning
+            if self._validate_game_url(url):
+                return url
+            else:
+                log_warn("GameManager", f"Invalid embed URL found: {url}")
+        return None
     
     def _extract_hero_image(self, html_content: str) -> Optional[str]:
-        """Extract hero image from HTML comment"""
+        """Extract and validate hero image from HTML comment"""
         m = re.search(r"<!--\s*hero:\s*(.*?)\s*-->", html_content, flags=re.IGNORECASE)
-        return m.group(1).strip() if m else None
+        if m:
+            image_path = m.group(1).strip()
+            # Validate the image path before returning
+            if self._validate_image_path(image_path):
+                return image_path
+            else:
+                log_warn("GameManager", f"Invalid hero image path: {image_path}")
+        return None
     
     def _extract_metadata(self, html_content: str, filename: str) -> Dict[str, Any]:
-        """Extract JSON metadata from HTML comment"""
+        """Extract and sanitize JSON metadata from HTML comment"""
         try:
             m = re.search(r"<!--\s*meta:\s*(\{[\s\S]*?\})\s*-->", html_content, flags=re.IGNORECASE)
             if m:
-                return json.loads(m.group(1))
-        except Exception as e:
-            print(f"⚠️  Ignoring invalid meta JSON in {filename}: {e}")
+                raw_meta = json.loads(m.group(1))
+                # Sanitize the metadata before returning
+                return self._sanitize_game_metadata(raw_meta)
+        except json.JSONDecodeError as e:
+            # Specifically handle JSON parsing errors with detailed context
+            log_warn("GameManager", f"Invalid JSON syntax in {filename} metadata: {e}")
+        except (ValueError, TypeError) as e:
+            # Handle JSON structure issues (wrong types, etc.)
+            log_warn("GameManager", f"Invalid meta data structure in {filename}: {e}")
         return {}
     
     def generate_game_rating(self, game_slug: str, custom_rating: Optional[Dict] = None) -> Dict[str, Any]:
@@ -151,7 +292,9 @@ class GameManager:
             
         try:
             h = int(hashlib.sha256(game_slug.encode('utf-8')).hexdigest()[:8], 16)
-        except Exception:
+        except (ValueError, UnicodeEncodeError) as e:
+            # Handle encoding errors or conversion errors gracefully
+            # Fallback to simple checksum if hashing fails
             h = sum(ord(c) for c in game_slug)
         
         # Rating between 3.0 and 4.9
@@ -301,7 +444,7 @@ class GameManager:
     
     def _report_missing_images(self) -> None:
         """Report all missing images found during scanning."""
-        print(f"\n⚠️  Found {len(self.missing_images)} missing images:")
+        log_warn("GameManager", f"Found {len(self.missing_images)} missing images:", "⚠️")
         
         # Group by game for cleaner output
         games_with_missing = {}
@@ -312,15 +455,15 @@ class GameManager:
             games_with_missing[game].append(item)
         
         for game, issues in games_with_missing.items():
-            print(f"  📎 Game: {game}")
+            log_info("GameManager", f"Game: {game}", "📎")
             for issue in issues:
-                print(f"    ❌ Missing {issue['type']}: {issue['missing_file']}")
+                log_error("GameManager", f"Missing {issue['type']}: {issue['missing_file']}", "❌")
                 if issue['game'] in self.image_fallbacks:
                     fallback_info = self.image_fallbacks.get(f"{game}_{issue['type']}")
                     if fallback_info:
-                        print(f"    ✅ Using fallback: {fallback_info['fallback']}")
+                        log_success("GameManager", f"Using fallback: {fallback_info['fallback']}", "✅")
         
-        print(f"\n📊 Image Validation Summary:")
-        print(f"  • Total missing: {len(self.missing_images)}")
-        print(f"  • Fallbacks used: {len(self.image_fallbacks)}")
-        print(f"  • Affected games: {len(games_with_missing)}")
+        log_info("GameManager", "Image Validation Summary:", "📊")
+        log_info("GameManager", f"Total missing: {len(self.missing_images)}", "•")
+        log_info("GameManager", f"Fallbacks used: {len(self.image_fallbacks)}", "•")
+        log_info("GameManager", f"Affected games: {len(games_with_missing)}", "•")

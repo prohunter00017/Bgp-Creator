@@ -10,7 +10,7 @@ It only provides the essential functionality needed by generate_site.py
 import json
 import os
 from datetime import datetime
-from typing import Optional, Dict, Any, List, Union
+from typing import Optional, Dict, Any
 from .url_utils import URLBuilder
 
 class SiteConfig:
@@ -566,7 +566,7 @@ class SiteConfig:
         # Generate unique ratings per game based on slug
         try:
             h = int(hashlib.sha256(game_slug.encode('utf-8')).hexdigest()[:8], 16)
-        except Exception:
+        except (UnicodeEncodeError, AttributeError):
             h = sum(ord(c) for c in game_slug)
         
         # Rating between 3.5 and 4.9

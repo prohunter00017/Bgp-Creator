@@ -109,7 +109,19 @@ def generate_css_for_site(template_css_path: str, output_css_path: str, palette_
             f.write(processed_css)
         
         return True
-        
-    except Exception as e:
-        print(f"❌ Error processing CSS: {e}")
+    
+    except FileNotFoundError as e:
+        print(f"❌ CSS template file not found: {template_css_path} - {e}")
+        return False
+    except PermissionError as e:
+        print(f"❌ Permission denied writing CSS: {output_css_path} - {e}")
+        return False
+    except OSError as e:
+        print(f"❌ File system error processing CSS: {e}")
+        return False
+    except UnicodeDecodeError as e:
+        print(f"❌ Invalid encoding in CSS file: {e}")
+        return False
+    except ValueError as e:
+        print(f"❌ Invalid palette number or CSS format: {e}")
         return False

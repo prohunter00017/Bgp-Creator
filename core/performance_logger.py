@@ -11,9 +11,30 @@ import psutil
 import os
 from collections import defaultdict
 from contextlib import contextmanager
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Dict, List, Any, Optional, Union
 from dataclasses import dataclass, field
+from enum import Enum
+
+
+class LogLevel(Enum):
+    """Log level enumeration for filtering messages"""
+    DEBUG = 10
+    INFO = 20
+    WARNING = 30
+    ERROR = 40
+    
+    @classmethod
+    def from_string(cls, level_str: str) -> 'LogLevel':
+        """Convert string to LogLevel"""
+        level_map = {
+            'DEBUG': cls.DEBUG,
+            'INFO': cls.INFO,
+            'WARNING': cls.WARNING,
+            'WARN': cls.WARNING,
+            'ERROR': cls.ERROR
+        }
+        return level_map.get(level_str.upper(), cls.INFO)
 
 
 @dataclass
@@ -59,14 +80,48 @@ class PerformanceStats:
 
 
 class PerformanceLogger:
-    """Thread-safe performance logger for build operations"""
+    """Thread-safe performance logger with configurable verbosity"""
     
-    def __init__(self):
+    def __init__(self, log_level: LogLevel = LogLevel.INFO, quiet: bool = False, verbose: bool = False):
         self._timings: Dict[str, List[TimingMetric]] = defaultdict(list)
         self._stats: Dict[str, PerformanceStats] = defaultdict(PerformanceStats)
         self._lock = threading.RLock()
         self._build_start_time = time.time()
         self._active_timers: Dict[str, TimingMetric] = {}
+        
+        # Configure log level based on quiet/verbose flags
+        if quiet:
+            self._log_level = LogLevel.WARNING
+        elif verbose:
+            self._log_level = LogLevel.DEBUG
+        else:
+            self._log_level = log_level
+        
+        # Allow environment variable override
+        env_level = os.environ.get('BGP_LOG_LEVEL')
+        if env_level:
+            self._log_level = LogLevel.from_string(env_level)
+    
+    def set_log_level(self, level: Union[LogLevel, str]):
+        """Set the minimum log level for output"""
+        if isinstance(level, str):
+            self._log_level = LogLevel.from_string(level)
+        else:
+            self._log_level = level
+    
+    def set_quiet_mode(self, quiet: bool):
+        """Enable/disable quiet mode (WARNING and ERROR only)"""
+        if quiet:
+            self._log_level = LogLevel.WARNING
+        else:
+            self._log_level = LogLevel.INFO
+    
+    def set_verbose_mode(self, verbose: bool):
+        """Enable/disable verbose mode (all messages including DEBUG)"""
+        if verbose:
+            self._log_level = LogLevel.DEBUG
+        else:
+            self._log_level = LogLevel.INFO
     
     def start_timing(self, operation: str, metadata: Optional[Dict[str, Any]] = None) -> str:
         """
@@ -158,10 +213,27 @@ class PerformanceLogger:
             stats: Optional performance statistics
             extra: Optional extra metadata
         """
+        # Check if message should be logged based on current log level
+        message_level = LogLevel.from_string(level)
+        if message_level.value < self._log_level.value:
+            return  # Skip messages below current log level
+        
         timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]  # Include milliseconds
         
         # Build the display message
         display_parts = []
+        
+        # Add timestamp for verbose mode or ERROR/WARNING messages
+        if self._log_level == LogLevel.DEBUG or message_level in [LogLevel.ERROR, LogLevel.WARNING]:
+            display_parts.append(f"[{timestamp}]")
+        
+        # Add log level indicator for DEBUG mode
+        if self._log_level == LogLevel.DEBUG:
+            display_parts.append(f"[{level:5s}]")
+        
+        # Add component name in DEBUG mode
+        if self._log_level == LogLevel.DEBUG and component:
+            display_parts.append(f"[{component}]")
         
         if emoji:
             display_parts.append(emoji)

@@ -9,7 +9,6 @@ import json
 import hashlib
 import time
 from typing import Dict, Set, List, Optional, Any
-from pathlib import Path
 
 
 class BuildCache:

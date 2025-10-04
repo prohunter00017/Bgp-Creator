@@ -97,7 +97,8 @@
       <div class="header-inner">
         <!-- Logo -->
         <a href="/" class="logo" {% if current_page == 'index' %}aria-current="page"{% endif %}>
-          <img src="/logo.png" alt="{{ logo_seo_attributes.alt }}" title="{{ logo_seo_attributes.title }}">
+          <img src="/logo.png" alt="{{ logo_seo_attributes.alt }}" title="{{ logo_seo_attributes.title }}" 
+               loading="lazy" decoding="async" width="150" height="50">
         </a>
         
         <!-- Mobile Menu Toggle -->

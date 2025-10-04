@@ -7,9 +7,8 @@ Generates multiple image sizes, formats, and SEO-optimized markup.
 import os
 import json
 import shutil
-import time
 from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Tuple, Dict, Callable, Any
 from threading import Lock
 from PIL import Image, ImageOps
@@ -51,6 +50,15 @@ class ImageOptimizer:
                 config = json.load(f)
                 return config.get("image_optimization", {})
         except FileNotFoundError:
+            # Config file doesn't exist, use default settings
+            return {}
+        except json.JSONDecodeError as e:
+            # Invalid JSON in config file
+            print(f"⚠️  Invalid JSON in seo_config.json: {e}")
+            return {}
+        except (OSError, IOError) as e:
+            # File access issues (permissions, disk errors)
+            print(f"⚠️  Could not read seo_config.json: {e}")
             return {}
     
     def _needs_processing(self, source_path, target_path):
@@ -173,8 +181,15 @@ class ImageOptimizer:
                 img.save(input_path, 'WEBP', quality=85, optimize=True)
                 print(f"  ✅ Optimized image: {image_name}.webp")
                 
-        except Exception as e:
+        except (OSError, IOError) as e:
+            # File access errors (permissions, disk space, invalid file)
             print(f"  ⚠️  Could not optimize {image_name}: {e}")
+        except ValueError as e:
+            # Invalid image mode conversion or parameters
+            print(f"  ⚠️  Invalid image format for {image_name}: {e}")
+        except MemoryError as e:
+            # Not enough memory to process image
+            print(f"  ⚠️  Insufficient memory to process {image_name}: {e}")
     
     def _get_site_name(self):
         """Get site name from seo_config.json (cross-platform)"""
@@ -197,33 +212,39 @@ class ImageOptimizer:
     
     def _optimize_favicon(self):
         """Generate favicon in multiple sizes with organized structure"""
+        # First check for gamelogo.webp in static directory
+        gamelogo_path = os.path.join(self.input_dir, "gamelogo.webp")
         favicon_path = os.path.join(self.input_dir, "favicon.ico")
-        if not os.path.exists(favicon_path):
-            print("⚠️  Favicon not found, creating default")
+        
+        # Use gamelogo.webp if it exists, otherwise fall back to favicon.ico
+        source_path = gamelogo_path if os.path.exists(gamelogo_path) else favicon_path
+        
+        if not os.path.exists(source_path):
+            print("⚠️  Favicon/gamelogo not found, creating default")
             return self._create_default_favicon()
         
         # Check if favicon processing is needed
         icons_dir = os.path.join(self.output_dir, "assets", "icons")
         test_icon_path = os.path.join(icons_dir, "favicon-32x32.png")
         
-        if not self._needs_processing(favicon_path, test_icon_path):
+        if not self._needs_processing(source_path, test_icon_path):
             print("📱 Favicon: up to date")
             return 0
         
-        print("📱 Processing favicon...")
+        print(f"📱 Processing favicon from {os.path.basename(source_path)}...")
         
         # Create organized icons directory
         icons_dir = os.path.join(self.output_dir, "assets", "icons")
         os.makedirs(icons_dir, exist_ok=True)
         
         try:
-            with Image.open(favicon_path) as img:
+            with Image.open(source_path) as img:
                 # Convert to RGBA if necessary
                 if img.mode != 'RGBA':
                     img = img.convert('RGBA')
                 
-                # Generate multiple sizes in parallel
-                favicon_sizes = [16, 32, 48, 64, 128, 192, 256, 512]
+                # Generate only essential sizes for Core Web Vitals (reduced from 8 to 3)
+                favicon_sizes = [16, 32, 192]  # Minimum sizes needed for browsers
                 
                 # Create tasks for parallel favicon generation
                 favicon_tasks = [(img.copy(), size, icons_dir) for size in favicon_sizes]
@@ -231,17 +252,32 @@ class ImageOptimizer:
                 # Process favicon sizes in parallel using ThreadPoolExecutor
                 self._process_favicon_sizes_parallel(favicon_tasks)
                 
-                # Copy original favicon to root (required for browser fallback)
-                shutil.copy2(favicon_path, os.path.join(self.output_dir, "favicon.ico"))
+                # Create favicon.ico from the source image
+                img_32 = img.resize((32, 32), Image.Resampling.LANCZOS)
+                favicon_output = os.path.join(self.output_dir, "favicon.ico")
+                img_32.save(favicon_output, format='ICO')
                 
-                print(f"  ✅ Generated favicon in {len(favicon_sizes)} sizes (organized in /assets/icons/)")
+                # Also save optimized WebP version for modern browsers
+                webp_path = os.path.join(self.output_dir, "assets", "icons", "favicon.webp")
+                img_32.save(webp_path, format='WEBP', quality=90, method=6)
+                
+                print(f"  ✅ Generated favicon in {len(favicon_sizes)} optimized sizes (organized in /assets/icons/)")
                 
                 # Register the source image as processed to avoid duplication by AssetManager
                 if self.build_cache:
-                    self.build_cache.register_processed_image(favicon_path)
+                    self.build_cache.register_processed_image(source_path)
                 
-        except Exception as e:
-            print(f"❌ Error optimizing favicon: {e}")
+        except (OSError, IOError) as e:
+            # File access errors (permissions, disk space, corrupt file)
+            print(f"❌ Error reading/writing favicon files: {e}")
+            return 0
+        except ValueError as e:
+            # Invalid image mode conversion or parameters
+            print(f"❌ Invalid favicon image format: {e}")
+            return 0
+        except MemoryError as e:
+            # Not enough memory to process favicon
+            print(f"❌ Insufficient memory to process favicon: {e}")
             return 0
         
         return 1  # Return 1 to indicate successful processing
@@ -271,8 +307,17 @@ class ImageOptimizer:
                     result = future.result()
                     with self._stats_lock:
                         total_processed += result
+                except (OSError, IOError) as e:
+                    # File system errors during task execution
+                    print(f"⚠️  File system error in image task '{task_name}': {e}")
+                    # Continue processing other tasks
+                except MemoryError as e:
+                    # Memory errors during image processing
+                    print(f"⚠️  Memory error in image task '{task_name}': {e}")
+                    # Continue processing other tasks
                 except Exception as e:
-                    print(f"⚠️  Error in image task '{task_name}': {e}")
+                    # Catch any other unexpected errors but log them specifically
+                    print(f"⚠️  Unexpected error in image task '{task_name}': {type(e).__name__}: {e}")
                     # Continue processing other tasks
         
         return total_processed
@@ -337,8 +382,17 @@ class ImageOptimizer:
                 if self.build_cache:
                     self.build_cache.register_processed_image(gamelogo_path)
                 
-        except Exception as e:
-            print(f"❌ Error optimizing game logo: {e}")
+        except (OSError, IOError) as e:
+            # File access errors (permissions, disk space, corrupt file)
+            print(f"❌ Error reading/writing game logo: {e}")
+            return 0
+        except ValueError as e:
+            # Invalid image mode conversion or parameters
+            print(f"❌ Invalid game logo image format: {e}")
+            return 0
+        except MemoryError as e:
+            # Not enough memory to process game logo
+            print(f"❌ Insufficient memory to process game logo: {e}")
             return 0
         
         return 1  # Return 1 to indicate successful processing
@@ -397,8 +451,15 @@ class ImageOptimizer:
                     
                     print(f"  ✅ Generated OG image: {image_name}_og (WebP)")
                     
-            except Exception as e:
-                print(f"❌ Error generating OG image {image_name}: {e}")
+            except (OSError, IOError) as e:
+                # File access errors (permissions, disk space, corrupt file)
+                print(f"❌ Error reading/writing OG image {image_name}: {e}")
+            except ValueError as e:
+                # Invalid image mode conversion or parameters
+                print(f"❌ Invalid OG image format for {image_name}: {e}")
+            except MemoryError as e:
+                # Not enough memory to process OG image
+                print(f"❌ Insufficient memory to process OG image {image_name}: {e}")
         
         return 1  # Return 1 to indicate processing was attempted
     
@@ -578,8 +639,17 @@ class ImageOptimizer:
                     
                     print(f"  ✅ Generated {filename} (in /assets/pwa/)")
                 
-        except Exception as e:
-            print(f"❌ Error generating PWA icons: {e}")
+        except (OSError, IOError) as e:
+            # File access errors (permissions, disk space, corrupt file)
+            print(f"❌ Error reading/writing PWA icons: {e}")
+            return 0
+        except ValueError as e:
+            # Invalid image mode conversion or parameters
+            print(f"❌ Invalid PWA icon image format: {e}")
+            return 0
+        except MemoryError as e:
+            # Not enough memory to process PWA icons
+            print(f"❌ Insufficient memory to process PWA icons: {e}")
             return 0
         
         return 1  # Return 1 to indicate successful processing
@@ -633,8 +703,17 @@ class ImageOptimizer:
                     
                     print(f"  ✅ Generated {filename} (in /assets/pwa/)")
                 
-        except Exception as e:
-            print(f"❌ Error generating PWA screenshots: {e}")
+        except (OSError, IOError) as e:
+            # File access errors (permissions, disk space, corrupt file)
+            print(f"❌ Error reading/writing PWA screenshots: {e}")
+            return 0
+        except ValueError as e:
+            # Invalid image mode conversion or parameters
+            print(f"❌ Invalid PWA screenshot image format: {e}")
+            return 0
+        except MemoryError as e:
+            # Not enough memory to process PWA screenshots
+            print(f"❌ Insufficient memory to process PWA screenshots: {e}")
             return 0
         
         return 1  # Return 1 to indicate successful processing
@@ -675,8 +754,17 @@ class ImageOptimizer:
             
             return canvas
             
-        except Exception as e:
-            print(f"⚠️  Could not add device frame: {e}")
+        except ImportError as e:
+            # Missing PIL dependency for ImageDraw
+            print(f"⚠️  ImageDraw module not available for device frame: {e}")
+            return image
+        except ValueError as e:
+            # Invalid parameters or image mode issues
+            print(f"⚠️  Invalid parameters for device frame: {e}")
+            return image
+        except (OSError, IOError) as e:
+            # Drawing operation failed
+            print(f"⚠️  Failed to draw device frame: {e}")
             return image
 
     def _save_updated_config(self):
@@ -705,8 +793,17 @@ class ImageOptimizer:
                     resized.save(ico_path, "ICO")
                 
                 return f"favicon-{size}x{size}"
-            except Exception as e:
-                print(f"⚠️  Error processing favicon size {size}: {e}")
+            except (OSError, IOError) as e:
+                # File access errors during favicon resize/save
+                print(f"⚠️  Error saving favicon size {size}: {e}")
+                return None
+            except ValueError as e:
+                # Invalid image parameters or mode conversion error
+                print(f"⚠️  Invalid parameters for favicon size {size}: {e}")
+                return None
+            except MemoryError as e:
+                # Not enough memory for favicon processing
+                print(f"⚠️  Insufficient memory for favicon size {size}: {e}")
                 return None
         
         # Use ThreadPoolExecutor for parallel favicon processing (I/O bound operations)
@@ -720,8 +817,12 @@ class ImageOptimizer:
                     result = future.result()
                     if result:
                         print(f"  ✅ Generated {result} (in organized directory)")
+                except (OSError, IOError) as e:
+                    # File system errors during parallel task execution
+                    print(f"⚠️  File system error in favicon parallel processing: {e}")
                 except Exception as e:
-                    print(f"⚠️  Error in favicon parallel processing: {e}")
+                    # Catch any unexpected errors from threading
+                    print(f"⚠️  Unexpected error in favicon parallel processing: {type(e).__name__}: {e}")
     
     def _process_pwa_icons_parallel(self, pwa_tasks: List[Tuple]) -> None:
         """
@@ -766,8 +867,17 @@ class ImageOptimizer:
                 final_icon.save(output_path, "PNG", optimize=True)
                 
                 return filename
-            except Exception as e:
-                print(f"⚠️  Error processing PWA icon {icon_config}: {e}")
+            except (OSError, IOError) as e:
+                # File access errors during PWA icon processing
+                print(f"⚠️  Error saving PWA icon {icon_config}: {e}")
+                return None
+            except ValueError as e:
+                # Invalid image parameters or mode conversion error
+                print(f"⚠️  Invalid parameters for PWA icon {icon_config}: {e}")
+                return None
+            except MemoryError as e:
+                # Not enough memory for PWA icon processing
+                print(f"⚠️  Insufficient memory for PWA icon {icon_config}: {e}")
                 return None
         
         # Use ThreadPoolExecutor for parallel PWA icon processing
@@ -781,8 +891,12 @@ class ImageOptimizer:
                     result = future.result()
                     if result:
                         print(f"  ✅ Generated {result} (in /assets/pwa/)")
+                except (OSError, IOError) as e:
+                    # File system errors during parallel task execution
+                    print(f"⚠️  File system error in PWA icon parallel processing: {e}")
                 except Exception as e:
-                    print(f"⚠️  Error in PWA icon parallel processing: {e}")
+                    # Catch any unexpected errors from threading
+                    print(f"⚠️  Unexpected error in PWA icon parallel processing: {type(e).__name__}: {e}")
     
     def _process_pwa_screenshots_parallel(self, screenshot_tasks: List[Tuple]) -> None:
         """
@@ -814,8 +928,17 @@ class ImageOptimizer:
                 screenshot.save(output_path, "PNG", optimize=True)
                 
                 return filename
-            except Exception as e:
-                print(f"⚠️  Error processing PWA screenshot {config}: {e}")
+            except (OSError, IOError) as e:
+                # File access errors during screenshot processing
+                print(f"⚠️  Error saving PWA screenshot {config}: {e}")
+                return None
+            except ValueError as e:
+                # Invalid image parameters or mode conversion error
+                print(f"⚠️  Invalid parameters for PWA screenshot {config}: {e}")
+                return None
+            except MemoryError as e:
+                # Not enough memory for screenshot processing
+                print(f"⚠️  Insufficient memory for PWA screenshot {config}: {e}")
                 return None
         
         # Use ThreadPoolExecutor for parallel screenshot processing 
@@ -829,8 +952,12 @@ class ImageOptimizer:
                     result = future.result()
                     if result:
                         print(f"  ✅ Generated {result} (in /assets/pwa/)")
+                except (OSError, IOError) as e:
+                    # File system errors during parallel task execution
+                    print(f"⚠️  File system error in screenshot parallel processing: {e}")
                 except Exception as e:
-                    print(f"⚠️  Error in screenshot parallel processing: {e}")
+                    # Catch any unexpected errors from threading
+                    print(f"⚠️  Unexpected error in screenshot parallel processing: {type(e).__name__}: {e}")
 
 def main():
     """Main function - automatically optimize images"""

@@ -7,7 +7,6 @@ Handles static files, CSS, JavaScript, and image copying with optimization
 import os
 import shutil
 import re
-import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Dict, Any, Optional, List, Tuple
 from threading import Lock
@@ -256,8 +255,14 @@ class AssetManager:
                             stats['skipped'] += 1
                         elif result == 'error':
                             stats['errors'] += 1
+                except (OSError, IOError) as e:
+                    # File system errors during parallel execution
+                    log_warn("AssetManager", f"File system error in parallel copy task {task}: {e}", "⚠️")
+                    with self._stats_lock:
+                        stats['errors'] += 1
                 except Exception as e:
-                    log_warn("AssetManager", f"Unexpected error in parallel copy task {task}: {e}", "⚠️")
+                    # Catch unexpected errors from threading but log the specific type
+                    log_warn("AssetManager", f"Unexpected error in parallel copy ({type(e).__name__}): {e}", "⚠️")
                     with self._stats_lock:
                         stats['errors'] += 1
         
@@ -266,6 +271,7 @@ class AssetManager:
     def _copy_single_file(self, task: Tuple[str, str, bool]) -> str:
         """
         Copy a single file (thread-safe method for parallel execution).
+        Uses chunked copying for large files to avoid memory issues.
         
         Args:
             task: Tuple of (source_path, target_path, force)
@@ -285,15 +291,50 @@ class AssetManager:
             if not force and not self._needs_copy(source_path, target_path):
                 return 'skipped'
             
-            shutil.copy2(source_path, target_path)
+            # Get file size to determine copy strategy
+            file_size = os.path.getsize(source_path)
+            
+            # Use chunked copying for files larger than 10MB
+            if file_size > 10 * 1024 * 1024:  # 10MB threshold
+                self._copy_large_file_chunked(source_path, target_path)
+            else:
+                shutil.copy2(source_path, target_path)
             return 'copied'
             
         except (OSError, IOError, shutil.SameFileError) as e:
             log_warn("AssetManager", f"Could not copy {source_path}: {e}", "⚠️")
             return 'error'
-        except Exception as e:
-            log_warn("AssetManager", f"Unexpected error copying {source_path}: {e}", "⚠️")
+        except MemoryError as e:
+            # Not enough memory to copy file
+            log_warn("AssetManager", f"Insufficient memory copying {source_path}: {e}", "⚠️")
             return 'error'
+        except Exception as e:
+            # Catch any other unexpected errors but log the specific type
+            log_warn("AssetManager", f"Unexpected error copying {source_path} ({type(e).__name__}): {e}", "⚠️")
+            return 'error'
+    
+    def _copy_large_file_chunked(self, source_path: str, target_path: str, chunk_size: int = 1024 * 1024) -> None:
+        """
+        Copy a large file using chunked reading/writing to avoid memory issues.
+        
+        Args:
+            source_path: Path to source file
+            target_path: Path to destination file
+            chunk_size: Size of chunks to read/write (default 1MB)
+        """
+        import shutil
+        import os
+        
+        with open(source_path, 'rb') as src_file:
+            with open(target_path, 'wb') as dst_file:
+                while True:
+                    chunk = src_file.read(chunk_size)
+                    if not chunk:
+                        break
+                    dst_file.write(chunk)
+        
+        # Preserve file metadata
+        shutil.copystat(source_path, target_path)
     
     def _copy_files_by_pattern(self, pattern: str, target_dir: str, 
                               preserve_path: bool = True, force: bool = False) -> Dict[str, int]:
@@ -347,7 +388,8 @@ class AssetManager:
         except (OSError, IOError, shutil.Error) as e:
             log_warn("AssetManager", f"Could not copy directory {src_dir}: {e}", "⚠️")
         except Exception as e:
-            log_warn("AssetManager", f"Unexpected error copying directory {src_dir}: {e}", "⚠️")
+            # Catch any other unexpected errors but log the specific type
+            log_warn("AssetManager", f"Unexpected error copying directory {src_dir} ({type(e).__name__}): {e}", "⚠️")
     
     def copy_file(self, src: str, dest: str, force: bool = False) -> bool:
         """
@@ -377,7 +419,8 @@ class AssetManager:
             log_warn("AssetManager", f"Could not copy {src} to {dest}: {e}", "⚠️")
             return False
         except Exception as e:
-            log_warn("AssetManager", f"Unexpected error copying {src} to {dest}: {e}", "⚠️")
+            # Catch any other unexpected errors but log the specific type
+            log_warn("AssetManager", f"Unexpected error copying {src} to {dest} ({type(e).__name__}): {e}", "⚠️")
             return False
     
     def _needs_copy(self, src: str, dest: str) -> bool:
@@ -464,8 +507,15 @@ class AssetManager:
                         self._minify_css_file(file_path)
                         css_files_processed += 1
                         log_info("AssetManager", f"Minified CSS: {file}", "🎨")
-                    except Exception as e:
-                        log_warn("AssetManager", f"Could not minify CSS {file}: {e}", "⚠️")
+                    except (OSError, IOError) as e:
+                        # File access errors during CSS minification
+                        log_warn("AssetManager", f"Could not read/write CSS {file}: {e}", "⚠️")
+                    except UnicodeDecodeError as e:
+                        # Encoding issues in CSS file
+                        log_warn("AssetManager", f"Invalid encoding in CSS {file}: {e}", "⚠️")
+                    except re.error as e:
+                        # Regex errors during minification
+                        log_warn("AssetManager", f"Regex error minifying CSS {file}: {e}", "⚠️")
         
         if css_files_processed > 0:
             log_success("AssetManager", f"Minified {css_files_processed} CSS files", "🎨")
@@ -474,26 +524,68 @@ class AssetManager:
     
     def _minify_css_file(self, file_path: str) -> None:
         """
-        Minify individual CSS file.
+        Robust CSS minification with proper regex patterns.
         """
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
         
-        # Basic CSS minification
-        # Remove comments
-        content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
-        # Remove extra whitespace
+        # Store original length for stats
+        original_length = len(content)
+        
+        # Robust CSS minification
+        # 1. Remove /* */ comments (multi-line)
+        content = re.sub(r'/\*[^*]*\*+(?:[^/*][^*]*\*+)*/', '', content)
+        
+        # 2. Remove // comments (single-line) - less common in CSS but can appear
+        # Only remove if not part of URL (http://, https://, //)
+        content = re.sub(r'(?<!:)//[^\n\r]*', '', content)
+        
+        # 3. Remove unnecessary whitespace while preserving strings
+        # First, protect strings by temporarily replacing them
+        strings = []
+        def protect_string(match):
+            strings.append(match.group(0))
+            return f'__STRING_{len(strings)-1}__'
+        
+        # Protect quoted strings
+        content = re.sub(r'"[^"\\]*(?:\\.[^"\\]*)*"', protect_string, content)
+        content = re.sub(r"'[^'\\]*(?:\\.[^'\\]*)*'", protect_string, content)
+        
+        # 4. Collapse multiple spaces to single space
         content = re.sub(r'\s+', ' ', content)
-        # Remove whitespace around certain characters
-        content = re.sub(r'\s*([{}:;,>+~])\s*', r'\1', content)
-        # Remove trailing semicolons before }
+        
+        # 5. Remove whitespace around CSS operators and punctuation
+        # More comprehensive list of CSS punctuation
+        content = re.sub(r'\s*([{}:;,>+~=\[\]()])\s*', r'\1', content)
+        
+        # 6. Remove space after ! in !important
+        content = re.sub(r'!\s+important', '!important', content)
+        
+        # 7. Remove trailing semicolons before }
         content = re.sub(r';\s*}', '}', content)
-        # Remove empty rules
-        content = re.sub(r'[^{}]*{\s*}', '', content)
+        
+        # 8. Remove empty rules and at-rules
+        content = re.sub(r'[^{}@]*{\s*}', '', content)
+        content = re.sub(r'@[^{]+{\s*}', '', content)
+        
+        # 9. Remove leading/trailing whitespace
+        content = content.strip()
+        
+        # 10. Restore protected strings
+        for i, string in enumerate(strings):
+            content = content.replace(f'__STRING_{i}__', string)
+        
+        # Calculate compression ratio
+        minified_length = len(content)
+        if original_length > 0:
+            compression_ratio = (1 - minified_length / original_length) * 100
+            log_info("AssetManager", 
+                    f"CSS minified: {os.path.basename(file_path)} - {compression_ratio:.1f}% reduction", 
+                    "🎨")
         
         # Write minified content
         with open(file_path, 'w', encoding='utf-8') as f:
-            f.write(content.strip())
+            f.write(content)
     
     def _minify_js_files(self) -> int:
         """
@@ -515,8 +607,15 @@ class AssetManager:
                         self._minify_js_file(file_path)
                         js_files_processed += 1
                         log_info("AssetManager", f"Minified JS: {file}", "⚙️")
-                    except Exception as e:
-                        log_warn("AssetManager", f"Could not minify JS {file}: {e}", "⚠️")
+                    except (OSError, IOError) as e:
+                        # File access errors during JS minification
+                        log_warn("AssetManager", f"Could not read/write JS {file}: {e}", "⚠️")
+                    except UnicodeDecodeError as e:
+                        # Encoding issues in JS file
+                        log_warn("AssetManager", f"Invalid encoding in JS {file}: {e}", "⚠️")
+                    except re.error as e:
+                        # Regex errors during minification
+                        log_warn("AssetManager", f"Regex error minifying JS {file}: {e}", "⚠️")
         
         if js_files_processed > 0:
             log_success("AssetManager", f"Minified {js_files_processed} JS files", "⚙️")
@@ -525,20 +624,91 @@ class AssetManager:
     
     def _minify_js_file(self, file_path: str) -> None:
         """
-        Basic JavaScript minification.
+        Robust JavaScript minification while preserving strings and regex patterns.
         """
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
         
-        # Basic JS minification - be conservative to avoid breaking code
-        # Remove single-line comments (but preserve URLs)
-        content = re.sub(r'(?<!:)//.*$', '', content, flags=re.MULTILINE)
-        # Remove multi-line comments
-        content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
-        # Remove extra whitespace (but preserve line breaks in strings)
+        # Store original length for stats
+        original_length = len(content)
+        
+        # Robust JS minification - preserve strings and regex patterns
+        # First, protect strings and regex patterns by temporarily replacing them
+        protected_items = []
+        
+        def protect_item(match):
+            protected_items.append(match.group(0))
+            return f'__PROTECTED_{len(protected_items)-1}__'
+        
+        # 1. Protect regex patterns (e.g., /pattern/flags)
+        # This is tricky - we need to avoid division operators
+        # Look for patterns after =, (, [, {, :, ,, !, &, |, return, new
+        content = re.sub(
+            r'((?:^|[=(\[{:,!&|]|\breturn\s+|\bnew\s+)\s*)(/[^/\n\r]+/[gimsuvy]*)',
+            lambda m: m.group(1) + protect_item(m),
+            content
+        )
+        
+        # 2. Protect double-quoted strings
+        content = re.sub(r'"(?:[^"\\]|\\.)*"', protect_item, content)
+        
+        # 3. Protect single-quoted strings
+        content = re.sub(r"'(?:[^'\\]|\\.)*'", protect_item, content)
+        
+        # 4. Protect template literals (backticks)
+        content = re.sub(r'`(?:[^`\\]|\\.)*`', protect_item, content)
+        
+        # 5. Remove single-line comments (// ...) but not URLs
+        content = re.sub(r'(?<!:)//[^\n\r]*', '', content)
+        
+        # 6. Remove multi-line comments (/* ... */)
+        content = re.sub(r'/\*[^*]*\*+(?:[^/*][^*]*\*+)*/', '', content)
+        
+        # 7. Remove unnecessary whitespace
+        # Collapse multiple spaces to single space
+        content = re.sub(r'[ \t]+', ' ', content)
+        
+        # 8. Remove spaces around operators and punctuation (but be careful with ++ --)
+        # First handle special cases
+        content = re.sub(r'\s*([{}();,])\s*', r'\1', content)
+        content = re.sub(r'\s*([\[\]])\s*', r'\1', content)
+        content = re.sub(r'\s*([=+\-*/%&|^!~<>])\s*', r'\1', content)
+        content = re.sub(r'\s*(:)\s*', r'\1', content)
+        content = re.sub(r'\s*(\.)\s*', r'\1', content)
+        
+        # 9. Fix issues with operators that shouldn't be collapsed
+        # Restore space after keywords
+        keywords = ['var', 'let', 'const', 'function', 'return', 'if', 'else', 
+                   'for', 'while', 'do', 'switch', 'case', 'break', 'continue',
+                   'new', 'typeof', 'instanceof', 'in', 'of', 'throw', 'try',
+                   'catch', 'finally', 'class', 'extends', 'import', 'export',
+                   'async', 'await', 'yield', 'delete', 'void']
+        for keyword in keywords:
+            content = re.sub(rf'\b{keyword}([^a-zA-Z0-9_$])', rf'{keyword} \1', content)
+        
+        # 10. Remove empty lines and collapse consecutive newlines
         content = re.sub(r'\n\s*\n', '\n', content)
-        # Remove leading/trailing whitespace
-        content = '\n'.join(line.strip() for line in content.split('\n') if line.strip())
+        content = re.sub(r'^\s+|\s+$', '', content, flags=re.MULTILINE)
+        
+        # 11. Remove unnecessary newlines (but keep some for readability)
+        # Remove newlines around brackets and punctuation
+        content = re.sub(r'\n\s*([{}();,])', r'\1', content)
+        content = re.sub(r'([{}]);?\n\s*', r'\1', content)
+        
+        # 12. Final cleanup - remove leading/trailing whitespace
+        content = content.strip()
+        
+        # 13. Restore protected strings, regex patterns, and template literals
+        for i, item in enumerate(protected_items):
+            content = content.replace(f'__PROTECTED_{i}__', item)
+        
+        # Calculate compression ratio
+        minified_length = len(content)
+        if original_length > 0:
+            compression_ratio = (1 - minified_length / original_length) * 100
+            log_info("AssetManager", 
+                    f"JS minified: {os.path.basename(file_path)} - {compression_ratio:.1f}% reduction", 
+                    "⚙️")
         
         # Write minified content
         with open(file_path, 'w', encoding='utf-8') as f:

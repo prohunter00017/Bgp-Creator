@@ -645,12 +645,12 @@ details[open] summary {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  filter: blur(10px);
-  opacity: 0.3;
+  filter: blur(3px); /* Reduced blur to show image better */
+  opacity: 0.6; /* Increased opacity to make hero image more visible */
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: filter 0.3s ease;
+  transition: filter 0.3s ease, opacity 0.3s ease;
 }
 
 /* Game Frame & Iframe - Enterprise Mobile Optimized */
@@ -693,7 +693,7 @@ iframe {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.4); /* Made more transparent to show hero image */
   color: #fff;
   font-weight: 600;
   z-index: 3;
